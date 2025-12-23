@@ -27,18 +27,25 @@ async function loadProducts() {
             const photoValue = row.c[6]?.v ? String(row.c[6].v) : '';
             const firstPhotoId = photoValue.split(',')[0].trim();
             
-            // Базовый путь к файлу без расширения
             const basePath = `photos/${firstPhotoId}`;
-
             const card = document.createElement('div');
             card.className = 'product-card';
             
-            // НОВАЯ ЛОГИКА: Пробуем JPG, если ошибка -> WEBP, если ошибка -> PNG, иначе -> Заглушка
-            // Внимание: строка onerror длинная, но она делает всю магию.
+            // Цепочка перебора: .jpg -> .JPG -> .webp -> .png -> .PNG
+            // Если ни один не подошел — ставим заглушку
+            const imgHtml = firstPhotoId ? 
+                `<img src="${basePath}.jpg" class="product-img" 
+                      onerror="
+                        if(this.src.endsWith('.jpg')) { this.src='${basePath}.JPG'; }
+                        else if(this.src.endsWith('.JPG')) { this.src='${basePath}.webp'; }
+                        else if(this.src.endsWith('.webp')) { this.src='${basePath}.png'; }
+                        else if(this.src.endsWith('.png')) { this.src='${basePath}.PNG'; }
+                        else { this.onerror=null; this.src='https://via.placeholder.com/300x400?text=4MENS'; }
+                      ">` :
+                `<img src="https://via.placeholder.com/300x400?text=4MENS" class="product-img">`;
+
             card.innerHTML = `
-                <img src="${basePath}.jpg" 
-                     class="product-img" 
-                     onerror="if (this.src.endsWith('.jpg')) { this.src='${basePath}.webp'; } else if (this.src.endsWith('.webp')) { this.src='${basePath}.png'; } else { this.src='https://via.placeholder.com/300x400?text=No+Photo'; }">
+                ${imgHtml}
                 <div class="product-info">
                     <div class="product-brand">${brand}</div>
                     <div class="product-name">${name}</div>
