@@ -9,6 +9,7 @@ tg.ready();
 let allProducts = [];
 
 async function loadProducts() {
+    // cacheBust заставляет телефон забыть старые ошибки и загрузить данные заново
     const cacheBuster = Date.now();
     const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(TABLE_NAME)}?cacheBust=${cacheBuster}`;
     
@@ -27,7 +28,7 @@ async function loadProducts() {
         }
     } catch (e) {
         console.error('Ошибка:', e);
-        document.getElementById('product-grid').innerHTML = '<p style="padding:20px;">Ошибка загрузки данных.</p>';
+        document.getElementById('product-grid').innerHTML = '<p style="padding:20px;">Не удалось загрузить каталог.</p>';
     }
 }
 
@@ -63,26 +64,32 @@ function renderProducts(filter) {
         const f = record.fields;
         if (filter !== 'Все' && f.Category !== filter) return;
 
-        let finalImgUrl = 'https://via.placeholder.com/300x400?text=Нет+фото';
+        let imgHtml = '';
         
+        // Логика обработки фото
         if (f.Photo && f.Photo.length > 0) {
-            // Берем обычную ссылку из Airtable
             const rawUrl = f.Photo[0].url;
             
-            // ПРОКСИ-РЕШЕНИЕ: Прогоняем через weserv.nl для стабильности на смартфонах
-            // Убираем протокол http/https из ссылки для прокси
-            const cleanUrl = rawUrl.replace(/^https?:\/\//, '');
-            finalImgUrl = `https://images.weserv.nl/?url=${cleanUrl}&w=400&h=533&fit=cover`;
+            // 1. Упаковываем ссылку для прокси (encodeURIComponent - это важно!)
+            // И используем сервис wsrv.nl (это короткий алиас того же сервиса)
+            const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}&w=400&output=jpg`;
+            
+            // 2. Вставляем картинку с запасным планом (onerror)
+            // Если proxyUrl не сработает, браузер попробует загрузить rawUrl (прямую ссылку)
+            imgHtml = `<img src="${proxyUrl}" 
+                            class="product-img" 
+                            loading="lazy"
+                            alt="${f.Name || 'Товар'}"
+                            onerror="this.onerror=null; this.src='${rawUrl}';">`;
+        } else {
+            imgHtml = `<img src="https://via.placeholder.com/300x400?text=Нет+фото" class="product-img">`;
         }
 
         const card = document.createElement('div');
         card.className = 'product-card';
         card.innerHTML = `
             <div class="img-container">
-                <img src="${finalImgUrl}" 
-                     class="product-img" 
-                     alt="Product"
-                     onerror="this.src='https://via.placeholder.com/300x400?text=Ошибка+загрузки';">
+                ${imgHtml}
             </div>
             <div class="product-info">
                 <div class="product-brand">${f.Brand || ''}</div>
