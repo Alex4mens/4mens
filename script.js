@@ -249,4 +249,26 @@ async function sendOrderToAirtable() {
         const result = await response.json();
 
         if (response.ok) {
-            tg.MainButton.hideProgress
+            tg.MainButton.hideProgress();
+            tg.showAlert('Заказ зафиксирован! Теперь оформите покупку и доставку в онлайн-магазинах по кнопкам ниже.');
+            renderCartItems(true);
+            tg.MainButton.setText('ВЕРНУТЬСЯ В КАТАЛОГ');
+            tg.MainButton.color = '#000000';
+            tg.MainButton.onClick(() => { window.location.reload(); });
+        } else {
+            console.error('Airtable error:', result);
+            throw new Error(result.error ? result.error.message : 'Неизвестная ошибка');
+        }
+    } catch (e) {
+        tg.MainButton.hideProgress();
+        tg.showAlert(`Ошибка Airtable: ${e.message}`);
+    }
+}
+
+tg.MainButton.onClick(function() {
+    if (tg.MainButton.text === 'ВЕРНУТЬСЯ В КАТАЛОГ') { window.location.reload(); return; }
+    const isCartView = document.getElementById('cart-view').style.display !== 'none';
+    if (isCartView) { sendOrderToAirtable(); } else { showCart(); }
+});
+
+loadProducts();
