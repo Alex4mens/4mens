@@ -1,7 +1,7 @@
 const AIRTABLE_TOKEN = 'pat5N4CqgXAwZElAT.b8463357d882ad2069a5f2856a0473a8ce14fe405da14e4497be9e26daa85ee0';
 const BASE_ID = 'appxIrQj687aVwaEF';
 const CATALOG_TABLE = 'Sheet1';
-const ORDERS_TABLE = 'Orders'; // Имя таблицы заказов
+const ORDERS_TABLE = 'Orders';
 
 const tg = window.Telegram.WebApp;
 tg.expand();
@@ -9,14 +9,12 @@ tg.expand();
 let cart = {}; 
 let allProducts = [];
 
-// Цвета кнопки Telegram
+// Цвета кнопки
 tg.MainButton.textColor = '#FFFFFF';
 tg.MainButton.color = '#000000';
 
-// Настройка кнопки "Назад"
 tg.BackButton.onClick(() => { showCatalog(); });
 
-// 1. ЗАГРУЗКА ТОВАРОВ
 async function loadProducts() {
     const cacheBuster = Date.now();
     const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(CATALOG_TABLE)}?cacheBust=${cacheBuster}`;
@@ -34,11 +32,9 @@ async function loadProducts() {
         }
     } catch (e) {
         console.error(e);
-        document.getElementById('product-grid').innerHTML = '<p style="padding:20px; text-align:center">Ошибка загрузки</p>';
     }
 }
 
-// 2. ОТРИСОВКА КАТЕГОРИЙ
 function renderCategories() {
     const categories = new Set(['Все']);
     allProducts.forEach(r => { if (r.fields.Category) categories.add(r.fields.Category); });
@@ -62,7 +58,6 @@ function renderCategories() {
     });
 }
 
-// 3. ОТРИСОВКА ТОВАРОВ
 function renderProducts(filter) {
     const grid = document.getElementById('product-grid');
     grid.innerHTML = '';
@@ -75,7 +70,6 @@ function renderProducts(filter) {
 
         let imgUrl = 'https://via.placeholder.com/300x400?text=No+Img';
         if (f.Photo && f.Photo.length > 0) {
-            // Берем большую миниатюру или оригинал
             imgUrl = f.Photo[0].thumbnails?.large?.url || f.Photo[0].url;
         }
 
@@ -106,7 +100,6 @@ function renderProducts(filter) {
     });
 }
 
-// 4. ДОБАВЛЕНИЕ В КОРЗИНУ
 window.toggleCart = function(id) {
     const btn = document.getElementById(`btn-${id}`);
     const product = allProducts.find(p => p.id === id);
@@ -129,17 +122,16 @@ function updateMainButton() {
         tg.MainButton.show();
         if (isCartView) {
             tg.MainButton.setText('ПОДТВЕРДИТЬ ЗАКАЗ');
-            tg.MainButton.color = '#2ea043'; // Зеленая
+            tg.MainButton.color = '#2ea043';
         } else {
             tg.MainButton.setText(`ОФОРМИТЬ ЗАКАЗ (${count})`);
-            tg.MainButton.color = '#000000'; // Черная
+            tg.MainButton.color = '#000000';
         }
     } else {
         tg.MainButton.hide();
     }
 }
 
-// 5. ПЕРЕКЛЮЧЕНИЕ ЭКРАНОВ
 function showCart() {
     document.getElementById('product-grid').style.display = 'none';
     document.getElementById('categories-nav').style.display = 'none';
@@ -157,7 +149,7 @@ function showCatalog() {
     updateMainButton();
 }
 
-// 6. ОТРИСОВКА ВНУТРЕННОСТЕЙ КОРЗИНЫ
+// Рендер элементов корзины (теперь с кнопкой Ссылки!)
 function renderCartItems() {
     const container = document.getElementById('cart-items');
     container.innerHTML = '';
@@ -174,18 +166,27 @@ function renderCartItems() {
 
         const price = f.Price || 0;
         totalPrice += price;
+        
+        const sellerName = f.Seller || 'магазин';
 
         const el = document.createElement('div');
         el.className = 'cart-item';
         el.innerHTML = `
-            <div class="cart-img-wrap">
-                <img src="${imgUrl}" class="cart-img" referrerpolicy="no-referrer">
+            <div class="cart-main-row">
+                <div class="cart-img-wrap">
+                    <img src="${imgUrl}" class="cart-img" referrerpolicy="no-referrer">
+                </div>
+                <div class="cart-info">
+                    <div class="cart-name">${f.Name}</div>
+                    <div class="cart-price">${price.toLocaleString()} ₽</div>
+                </div>
             </div>
-            <div class="cart-info">
-                <div class="cart-name">${f.Name}</div>
-                <div class="cart-price">${price.toLocaleString()} ₽</div>
+            <div class="cart-actions">
+                <button class="cart-link-btn" onclick="tg.openLink('${f.Link}')">
+                    Купить на ${sellerName}
+                </button>
+                <button class="cart-delete" onclick="removeFromCartInView('${id}')">Удалить</button>
             </div>
-            <button class="cart-delete" onclick="removeFromCartInView('${id}')">Удалить</button>
         `;
         container.appendChild(el);
     });
@@ -199,16 +200,14 @@ window.removeFromCartInView = function(id) {
     else { renderCartItems(); updateMainButton(); }
 }
 
-// 7. ОТПРАВКА ЗАКАЗА В AIRTABLE (БЕЗ ФОРМЫ)
+// ОТПРАВКА ЗАКАЗА С ДИАГНОСТИКОЙ ОШИБОК
 async function sendOrderToAirtable() {
     tg.MainButton.showProgress();
 
-    // Берем данные пользователя из Telegram
     const user = tg.initDataUnsafe.user || {};
     const username = user.username ? `@${user.username}` : 'Скрыт';
     const name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Аноним';
 
-    // Формируем чек
     const itemsList = Object.values(cart).map(i => `${i.fields.Name} (${i.fields.Price}р)`).join('\n');
     const total = Object.values(cart).reduce((sum, i) => sum + (i.fields.Price || 0), 0);
 
@@ -232,25 +231,51 @@ async function sendOrderToAirtable() {
             body: JSON.stringify(orderData)
         });
 
+        // ВАЖНО: Получаем ответ сервера, даже если там ошибка
+        const result = await response.json();
+
         if (response.ok) {
             tg.MainButton.hideProgress();
-            tg.showAlert(`Заказ отправлен! Мы напишем вам в Telegram (${username}).`);
-            cart = {};
-            showCatalog();
-            renderProducts('Все');
+            
+            // НОВОЕ СООБЩЕНИЕ И ЛОГИКА
+            tg.showAlert('Заказ зафиксирован! Теперь оформите покупку и доставку в онлайн-магазинах по кнопкам ниже.');
+            
+            // Меняем текст главной кнопки, чтобы она не смущала
+            tg.MainButton.setText('ВЕРНУТЬСЯ В КАТАЛОГ');
+            tg.MainButton.color = '#000000';
+            tg.MainButton.onClick(() => {
+                // При следующем нажатии - чистим корзину и идем в каталог
+                cart = {};
+                showCatalog();
+                renderProducts('Все');
+                // Возвращаем стандартное поведение кнопки (через перезагрузку обработчика это сложно, проще перезагрузить страницу или логику)
+                // Но для простоты сейчас так:
+                window.location.reload(); 
+            });
+
         } else {
-            throw new Error('Ошибка сервера Airtable');
+            // Если ошибка Airtable - показываем её текст
+            console.error('Airtable error:', result);
+            throw new Error(result.error ? result.error.message : 'Неизвестная ошибка');
         }
     } catch (e) {
         tg.MainButton.hideProgress();
-        tg.showAlert('Не удалось отправить заказ. Попробуйте позже.');
-        console.error(e);
+        // ВЫВОДИМ ТОЧНУЮ ОШИБКУ НА ЭКРАН
+        tg.showAlert(`Ошибка Airtable: ${e.message}. Проверьте названия колонок!`);
     }
 }
 
-// ОБРАБОТЧИК КНОПКИ
 tg.MainButton.onClick(function() {
+    // Внимание: внутри функции sendOrderToAirtable мы переопределяем onClick при успехе.
+    // Это стандартная обработка до успеха:
     const isCartView = document.getElementById('cart-view').style.display !== 'none';
+    
+    // Проверка текста кнопки, чтобы не зациклить отправку
+    if (tg.MainButton.text === 'ВЕРНУТЬСЯ В КАТАЛОГ') {
+         window.location.reload();
+         return;
+    }
+
     if (isCartView) {
         sendOrderToAirtable();
     } else {
