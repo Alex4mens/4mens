@@ -5,13 +5,17 @@ const TABLE_NAME = 'Sheet1';
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// Инициализация корзины
-let cart = {}; // Храним товары в формате { "id_товара": {данные} }
+let cart = {}; 
 let allProducts = [];
 
-// Настраиваем Главную Кнопку Telegram (синяя внизу)
+// Настройки главной кнопки
 tg.MainButton.textColor = '#FFFFFF';
-tg.MainButton.color = '#000000'; // Черный цвет под стиль бренда
+tg.MainButton.color = '#000000';
+
+// Обработка кнопки "Назад" (системная стрелочка Telegram)
+tg.BackButton.onClick(() => {
+    showCatalog();
+});
 
 async function loadProducts() {
     const cacheBuster = Date.now();
@@ -30,7 +34,6 @@ async function loadProducts() {
         }
     } catch (e) {
         console.error(e);
-        document.getElementById('product-grid').innerHTML = '<p style="padding:20px; text-align:center">Ошибка связи</p>';
     }
 }
 
@@ -46,7 +49,7 @@ function renderCategories() {
         const btn = document.createElement('button');
         btn.className = 'cat-btn';
         btn.innerText = cat;
-        if (cat === 'Все') btn.classList.add('active'); // По умолчанию активна "Все"
+        if (cat === 'Все') btn.classList.add('active'); 
         
         btn.onclick = () => {
             document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
@@ -63,21 +66,18 @@ function renderProducts(filter) {
 
     allProducts.forEach(record => {
         const f = record.fields;
-        const id = record.id; // Уникальный ID строки из Airtable
+        const id = record.id;
         
         if (filter !== 'Все' && f.Category !== filter) return;
 
-        // Фото: берем прямую ссылку (твои сжатые фото)
         let imgUrl = 'https://via.placeholder.com/300x400?text=No+Img';
         if (f.Photo && f.Photo.length > 0) {
-            // Если есть миниатюра - берем её, если нет - оригинал
             imgUrl = f.Photo[0].thumbnails?.large?.url || f.Photo[0].url;
         }
 
         const card = document.createElement('div');
         card.className = 'product-card';
         
-        // Проверяем, есть ли уже этот товар в корзине, чтобы покрасить кнопку
         const isAdded = cart[id] ? true : false;
         const btnText = isAdded ? 'Добавлено' : 'В корзину';
         const btnClass = isAdded ? 'buy-btn added' : 'buy-btn';
@@ -102,42 +102,132 @@ function renderProducts(filter) {
     });
 }
 
-// Функция добавления/удаления из корзины
 window.toggleCart = function(id) {
     const btn = document.getElementById(`btn-${id}`);
     const product = allProducts.find(p => p.id === id);
 
     if (cart[id]) {
-        // Если товар уже в корзине -> удаляем
         delete cart[id];
-        btn.innerText = 'В корзину';
-        btn.classList.remove('added');
+        if (btn) {
+            btn.innerText = 'В корзину';
+            btn.classList.remove('added');
+        }
     } else {
-        // Если товара нет -> добавляем
         cart[id] = product;
-        btn.innerText = 'Добавлено';
-        btn.classList.add('added');
+        if (btn) {
+            btn.innerText = 'Добавлено';
+            btn.classList.add('added');
+        }
     }
-
     updateMainButton();
 }
 
-// Обновление главной кнопки Telegram
 function updateMainButton() {
     const count = Object.keys(cart).length;
     
+    // Если мы сейчас в Корзине - кнопка называется "Отправить"
+    // Если мы в Каталоге - кнопка называется "Оформить (N)"
+    const isCartView = document.getElementById('cart-view').style.display !== 'none';
+
     if (count > 0) {
-        tg.MainButton.setText(`ОФОРМИТЬ ЗАКАЗ (${count})`);
         tg.MainButton.show();
+        if (isCartView) {
+            tg.MainButton.setText('ОТПРАВИТЬ ЗАКАЗ');
+            tg.MainButton.color = '#2ea043'; // Зеленая для отправки
+        } else {
+            tg.MainButton.setText(`ОФОРМИТЬ ЗАКАЗ (${count})`);
+            tg.MainButton.color = '#000000';
+        }
     } else {
         tg.MainButton.hide();
     }
 }
 
-// Обработка нажатия на главную кнопку
+// ПЕРЕКЛЮЧЕНИЕ ЭКРАНОВ
+function showCart() {
+    document.getElementById('product-grid').style.display = 'none';
+    document.getElementById('categories-nav').style.display = 'none'; // Скрываем категории
+    document.getElementById('cart-view').style.display = 'block';
+    
+    // Включаем кнопку "Назад"
+    tg.BackButton.show();
+    
+    renderCartItems();
+    updateMainButton();
+}
+
+function showCatalog() {
+    document.getElementById('cart-view').style.display = 'none';
+    document.getElementById('product-grid').style.display = 'grid';
+    document.getElementById('categories-nav').style.display = 'block';
+    
+    // Выключаем кнопку "Назад"
+    tg.BackButton.hide();
+    
+    updateMainButton();
+}
+
+// Отрисовка товаров ВНУТРИ корзины
+function renderCartItems() {
+    const container = document.getElementById('cart-items');
+    container.innerHTML = '';
+    
+    let totalPrice = 0;
+
+    Object.values(cart).forEach(item => {
+        const f = item.fields;
+        const id = item.id;
+        
+        let imgUrl = 'https://via.placeholder.com/100';
+        if (f.Photo && f.Photo.length > 0) {
+            imgUrl = f.Photo[0].thumbnails?.small?.url || f.Photo[0].url; // Берем маленькую картинку
+        }
+
+        const price = f.Price || 0;
+        totalPrice += price;
+
+        const el = document.createElement('div');
+        el.className = 'cart-item';
+        el.innerHTML = `
+            <div class="cart-img-wrap">
+                <img src="${imgUrl}" class="cart-img" referrerpolicy="no-referrer">
+            </div>
+            <div class="cart-info">
+                <div class="cart-name">${f.Name}</div>
+                <div class="cart-price">${price.toLocaleString()} ₽</div>
+            </div>
+            <button class="cart-delete" onclick="removeFromCartInView('${id}')">Удалить</button>
+        `;
+        container.appendChild(el);
+    });
+
+    document.getElementById('total-price').innerText = totalPrice.toLocaleString() + ' ₽';
+}
+
+// Удаление товара прямо из экрана корзины
+window.removeFromCartInView = function(id) {
+    delete cart[id];
+    
+    // Если удалили всё - возвращаем в каталог
+    if (Object.keys(cart).length === 0) {
+        showCatalog();
+    } else {
+        renderCartItems(); // Перерисовываем список
+        updateMainButton();
+    }
+}
+
+// ОБРАБОТКА НАЖАТИЯ ГЛАВНОЙ КНОПКИ
 tg.MainButton.onClick(function() {
-    // Пока просто выводим алерт, следующий шаг - экран заказа
-    tg.showAlert(`Выбрано товаров: ${Object.keys(cart).length}. Переход к оформлению...`);
+    const isCartView = document.getElementById('cart-view').style.display !== 'none';
+
+    if (isCartView) {
+        // ЭТО ФИНАЛ: Тут мы позже отправим данные боту
+        tg.showAlert('Заказ сформирован! (Это демо)');
+    } else {
+        // Переходим в корзину
+        showCart();
+    }
 });
 
 loadProducts();
