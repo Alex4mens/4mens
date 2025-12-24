@@ -1,6 +1,7 @@
 const AIRTABLE_TOKEN = 'pat5N4CqgXAwZElAT.b8463357d882ad2069a5f2856a0473a8ce14fe405da14e4497be9e26daa85ee0';
 const BASE_ID = 'appxIrQj687aVwaEF';
-const TABLE_NAME = 'Sheet1';
+const CATALOG_TABLE = 'Sheet1';
+const ORDERS_TABLE = 'Orders'; // Имя таблицы заказов
 
 const tg = window.Telegram.WebApp;
 tg.expand();
@@ -8,18 +9,17 @@ tg.expand();
 let cart = {}; 
 let allProducts = [];
 
-// Настройки главной кнопки
+// Цвета кнопки Telegram
 tg.MainButton.textColor = '#FFFFFF';
 tg.MainButton.color = '#000000';
 
-// Обработка кнопки "Назад" (системная стрелочка Telegram)
-tg.BackButton.onClick(() => {
-    showCatalog();
-});
+// Настройка кнопки "Назад"
+tg.BackButton.onClick(() => { showCatalog(); });
 
+// 1. ЗАГРУЗКА ТОВАРОВ
 async function loadProducts() {
     const cacheBuster = Date.now();
-    const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(TABLE_NAME)}?cacheBust=${cacheBuster}`;
+    const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(CATALOG_TABLE)}?cacheBust=${cacheBuster}`;
     
     try {
         const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_TOKEN}` } });
@@ -34,9 +34,11 @@ async function loadProducts() {
         }
     } catch (e) {
         console.error(e);
+        document.getElementById('product-grid').innerHTML = '<p style="padding:20px; text-align:center">Ошибка загрузки</p>';
     }
 }
 
+// 2. ОТРИСОВКА КАТЕГОРИЙ
 function renderCategories() {
     const categories = new Set(['Все']);
     allProducts.forEach(r => { if (r.fields.Category) categories.add(r.fields.Category); });
@@ -60,6 +62,7 @@ function renderCategories() {
     });
 }
 
+// 3. ОТРИСОВКА ТОВАРОВ
 function renderProducts(filter) {
     const grid = document.getElementById('product-grid');
     grid.innerHTML = '';
@@ -72,6 +75,7 @@ function renderProducts(filter) {
 
         let imgUrl = 'https://via.placeholder.com/300x400?text=No+Img';
         if (f.Photo && f.Photo.length > 0) {
+            // Берем большую миниатюру или оригинал
             imgUrl = f.Photo[0].thumbnails?.large?.url || f.Photo[0].url;
         }
 
@@ -102,56 +106,45 @@ function renderProducts(filter) {
     });
 }
 
+// 4. ДОБАВЛЕНИЕ В КОРЗИНУ
 window.toggleCart = function(id) {
     const btn = document.getElementById(`btn-${id}`);
     const product = allProducts.find(p => p.id === id);
 
     if (cart[id]) {
         delete cart[id];
-        if (btn) {
-            btn.innerText = 'В корзину';
-            btn.classList.remove('added');
-        }
+        if (btn) { btn.innerText = 'В корзину'; btn.classList.remove('added'); }
     } else {
         cart[id] = product;
-        if (btn) {
-            btn.innerText = 'Добавлено';
-            btn.classList.add('added');
-        }
+        if (btn) { btn.innerText = 'Добавлено'; btn.classList.add('added'); }
     }
     updateMainButton();
 }
 
 function updateMainButton() {
     const count = Object.keys(cart).length;
-    
-    // Если мы сейчас в Корзине - кнопка называется "Отправить"
-    // Если мы в Каталоге - кнопка называется "Оформить (N)"
     const isCartView = document.getElementById('cart-view').style.display !== 'none';
 
     if (count > 0) {
         tg.MainButton.show();
         if (isCartView) {
-            tg.MainButton.setText('ОТПРАВИТЬ ЗАКАЗ');
-            tg.MainButton.color = '#2ea043'; // Зеленая для отправки
+            tg.MainButton.setText('ПОДТВЕРДИТЬ ЗАКАЗ');
+            tg.MainButton.color = '#2ea043'; // Зеленая
         } else {
             tg.MainButton.setText(`ОФОРМИТЬ ЗАКАЗ (${count})`);
-            tg.MainButton.color = '#000000';
+            tg.MainButton.color = '#000000'; // Черная
         }
     } else {
         tg.MainButton.hide();
     }
 }
 
-// ПЕРЕКЛЮЧЕНИЕ ЭКРАНОВ
+// 5. ПЕРЕКЛЮЧЕНИЕ ЭКРАНОВ
 function showCart() {
     document.getElementById('product-grid').style.display = 'none';
-    document.getElementById('categories-nav').style.display = 'none'; // Скрываем категории
+    document.getElementById('categories-nav').style.display = 'none';
     document.getElementById('cart-view').style.display = 'block';
-    
-    // Включаем кнопку "Назад"
     tg.BackButton.show();
-    
     renderCartItems();
     updateMainButton();
 }
@@ -160,18 +153,14 @@ function showCatalog() {
     document.getElementById('cart-view').style.display = 'none';
     document.getElementById('product-grid').style.display = 'grid';
     document.getElementById('categories-nav').style.display = 'block';
-    
-    // Выключаем кнопку "Назад"
     tg.BackButton.hide();
-    
     updateMainButton();
 }
 
-// Отрисовка товаров ВНУТРИ корзины
+// 6. ОТРИСОВКА ВНУТРЕННОСТЕЙ КОРЗИНЫ
 function renderCartItems() {
     const container = document.getElementById('cart-items');
     container.innerHTML = '';
-    
     let totalPrice = 0;
 
     Object.values(cart).forEach(item => {
@@ -180,7 +169,7 @@ function renderCartItems() {
         
         let imgUrl = 'https://via.placeholder.com/100';
         if (f.Photo && f.Photo.length > 0) {
-            imgUrl = f.Photo[0].thumbnails?.small?.url || f.Photo[0].url; // Берем маленькую картинку
+            imgUrl = f.Photo[0].thumbnails?.small?.url || f.Photo[0].url;
         }
 
         const price = f.Price || 0;
@@ -204,28 +193,67 @@ function renderCartItems() {
     document.getElementById('total-price').innerText = totalPrice.toLocaleString() + ' ₽';
 }
 
-// Удаление товара прямо из экрана корзины
 window.removeFromCartInView = function(id) {
     delete cart[id];
-    
-    // Если удалили всё - возвращаем в каталог
-    if (Object.keys(cart).length === 0) {
-        showCatalog();
-    } else {
-        renderCartItems(); // Перерисовываем список
-        updateMainButton();
+    if (Object.keys(cart).length === 0) showCatalog();
+    else { renderCartItems(); updateMainButton(); }
+}
+
+// 7. ОТПРАВКА ЗАКАЗА В AIRTABLE (БЕЗ ФОРМЫ)
+async function sendOrderToAirtable() {
+    tg.MainButton.showProgress();
+
+    // Берем данные пользователя из Telegram
+    const user = tg.initDataUnsafe.user || {};
+    const username = user.username ? `@${user.username}` : 'Скрыт';
+    const name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Аноним';
+
+    // Формируем чек
+    const itemsList = Object.values(cart).map(i => `${i.fields.Name} (${i.fields.Price}р)`).join('\n');
+    const total = Object.values(cart).reduce((sum, i) => sum + (i.fields.Price || 0), 0);
+
+    const orderData = {
+        fields: {
+            "Client_Name": name,
+            "Client_Username": username,
+            "Total": total,
+            "Items": itemsList,
+            "Status": "New"
+        }
+    };
+
+    try {
+        const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${ORDERS_TABLE}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(orderData)
+        });
+
+        if (response.ok) {
+            tg.MainButton.hideProgress();
+            tg.showAlert(`Заказ отправлен! Мы напишем вам в Telegram (${username}).`);
+            cart = {};
+            showCatalog();
+            renderProducts('Все');
+        } else {
+            throw new Error('Ошибка сервера Airtable');
+        }
+    } catch (e) {
+        tg.MainButton.hideProgress();
+        tg.showAlert('Не удалось отправить заказ. Попробуйте позже.');
+        console.error(e);
     }
 }
 
-// ОБРАБОТКА НАЖАТИЯ ГЛАВНОЙ КНОПКИ
+// ОБРАБОТЧИК КНОПКИ
 tg.MainButton.onClick(function() {
     const isCartView = document.getElementById('cart-view').style.display !== 'none';
-
     if (isCartView) {
-        // ЭТО ФИНАЛ: Тут мы позже отправим данные боту
-        tg.showAlert('Заказ сформирован! (Это демо)');
+        sendOrderToAirtable();
     } else {
-        // Переходим в корзину
         showCart();
     }
 });
