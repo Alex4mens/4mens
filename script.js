@@ -9,7 +9,6 @@ tg.expand();
 let cart = {}; 
 let allProducts = [];
 
-// Цвета кнопки
 tg.MainButton.textColor = '#FFFFFF';
 tg.MainButton.color = '#000000';
 
@@ -68,10 +67,9 @@ function renderProducts(filter) {
         
         if (filter !== 'Все' && f.Category !== filter) return;
 
-        let imgUrl = 'https://via.placeholder.com/300x400?text=...';
-        if (f.Photo && f.Photo.length > 0) {
-            imgUrl = f.Photo[0].thumbnails?.large?.url || f.Photo[0].url;
-        }
+        // НОВАЯ ЛОГИКА: Берем ссылку из колонки Photo_Link
+        // Если там пусто - ставим заглушку
+        let imgUrl = f.Photo_Link ? f.Photo_Link : 'https://via.placeholder.com/300x400?text=Нет+фото';
 
         const card = document.createElement('div');
         card.className = 'product-card';
@@ -80,7 +78,6 @@ function renderProducts(filter) {
         const btnText = isAdded ? 'Добавлено' : 'В корзину';
         const btnClass = isAdded ? 'buy-btn added' : 'buy-btn';
 
-        // ИЗМЕНЕНИЕ: data-src вместо src для ленивой загрузки
         card.innerHTML = `
             <div class="img-container">
                 <img data-src="${imgUrl}" class="product-img lazy-load" referrerpolicy="no-referrer">
@@ -100,24 +97,21 @@ function renderProducts(filter) {
         grid.appendChild(card);
     });
 
-    // Запускаем наблюдатель за картинками после рендера
     observeImages();
 }
 
-// ФУНКЦИЯ ЛЕНИВОЙ ЗАГРУЗКИ
 function observeImages() {
     const images = document.querySelectorAll('img.lazy-load');
-    
     const observer = new IntersectionObserver((entries, observer) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 const img = entry.target;
-                img.src = img.dataset.src; // Загружаем картинку
-                img.onload = () => img.classList.add('loaded'); // Показываем плавно
-                observer.unobserve(img); // Перестаем следить за загруженной
+                img.src = img.dataset.src; 
+                img.onload = () => img.classList.add('loaded');
+                observer.unobserve(img);
             }
         });
-    }, { rootMargin: "50px" }); // Начинаем грузить чуть заранее (за 50px до появления)
+    }, { rootMargin: "50px" });
 
     images.forEach(img => observer.observe(img));
 }
@@ -180,10 +174,8 @@ function renderCartItems(showLinks = false) {
         const f = item.fields;
         const id = item.id;
         
-        let imgUrl = 'https://via.placeholder.com/100';
-        if (f.Photo && f.Photo.length > 0) {
-            imgUrl = f.Photo[0].thumbnails?.small?.url || f.Photo[0].url;
-        }
+        // В корзине тоже берем ссылку из Photo_Link
+        let imgUrl = f.Photo_Link ? f.Photo_Link : 'https://via.placeholder.com/100';
 
         const price = f.Price || 0;
         totalPrice += price;
