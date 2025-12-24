@@ -8,6 +8,7 @@ tg.ready();
 
 let allProducts = [];
 
+// Эта функция загружает данные из твоей таблицы Airtable
 async function loadProducts() {
     const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(TABLE_NAME)}`;
     
@@ -22,13 +23,15 @@ async function loadProducts() {
             renderCategories();
             renderProducts('Все');
         } else {
-            throw new Error('Данные не найдены');
+            throw new Error('Данные не найдены в Airtable');
         }
     } catch (e) {
-        document.getElementById('product-grid').innerHTML = `<p>Ошибка: ${e.message}</p>`;
+        console.error('Ошибка:', e);
+        document.getElementById('product-grid').innerHTML = `<p style="padding:20px;">Ошибка загрузки. Проверьте связь с базой.</p>`;
     }
 }
 
+// Эта функция создает кнопки категорий (Куртки/Пуховики и т.д.)
 function renderCategories() {
     const categories = new Set(['Все']);
     allProducts.forEach(record => {
@@ -37,6 +40,8 @@ function renderCategories() {
     });
 
     const nav = document.getElementById('categories');
+    if (!nav) return;
+    
     nav.innerHTML = '';
     categories.forEach(cat => {
         const btn = document.createElement('button');
@@ -52,25 +57,35 @@ function renderCategories() {
     if (nav.firstChild) nav.firstChild.classList.add('active');
 }
 
+// Эта функция рисует карточки товаров
 function renderProducts(filter) {
     const grid = document.getElementById('product-grid');
     grid.innerHTML = '';
 
     allProducts.forEach(record => {
         const f = record.fields;
+        
+        // Фильтр по категориям
         if (filter !== 'Все' && f.Category !== filter) return;
 
-        // УМНЫЙ ПОИСК ФОТО: ищем в полях Photo, photo или Image
-        const photoField = f.Photo || f.photo || f.Image || f.Attachments;
+        // Получаем ссылку на фото (ищем в полях Photo или photo)
+        const photoField = f.Photo || f.photo || f.Image;
         const imgUrl = (photoField && photoField.length > 0) 
             ? photoField[0].url 
             : 'https://via.placeholder.com/300x400?text=Нет+фото';
 
         const card = document.createElement('div');
         card.className = 'product-card';
+        
+        // В коде ниже мы добавили referrerpolicy="no-referrer", 
+        // чтобы телефоны не блокировали картинки из Airtable
         card.innerHTML = `
             <div class="img-container">
-                <img src="${imgUrl}" class="product-img" alt="Product">
+                <img src="${imgUrl}" 
+                     class="product-img" 
+                     alt="Product" 
+                     referrerpolicy="no-referrer"
+                     onerror="this.src='https://via.placeholder.com/300x400?text=Ошибка+загрузки';">
             </div>
             <div class="product-info">
                 <div class="product-brand">${f.Brand || ''}</div>
@@ -87,4 +102,5 @@ function renderProducts(filter) {
     });
 }
 
+// Запускаем процесс загрузки
 loadProducts();
