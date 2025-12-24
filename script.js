@@ -19,7 +19,7 @@ async function loadProducts() {
         renderCategories();
         renderProducts('Все');
     } catch (e) {
-        console.error('Ошибка:', e);
+        console.error('Ошибка загрузки:', e);
         document.getElementById('product-grid').innerHTML = 'Ошибка загрузки данных.';
     }
 }
@@ -27,7 +27,7 @@ async function loadProducts() {
 function renderCategories() {
     const categories = new Set(['Все']);
     allProducts.forEach(row => {
-        const cat = row.c[7]?.v; // Колонку H (индекс 7) считаем категорией
+        const cat = row.c[0]?.v; // Берем категорию из столбца A
         if (cat) categories.add(cat);
     });
 
@@ -44,7 +44,7 @@ function renderCategories() {
         };
         nav.appendChild(btn);
     });
-    nav.firstChild.classList.add('active');
+    if (nav.firstChild) nav.firstChild.classList.add('active');
 }
 
 function renderProducts(filter) {
@@ -52,7 +52,7 @@ function renderProducts(filter) {
     grid.innerHTML = '';
 
     allProducts.forEach(row => {
-        const cat = row.c[7]?.v || 'Без категории';
+        const cat = row.c[0]?.v || 'Без категории';
         if (filter !== 'Все' && cat !== filter) return;
 
         const seller = row.c[1]?.v || '';    
@@ -60,24 +60,24 @@ function renderProducts(filter) {
         const name = row.c[3]?.v || '';      
         const priceNew = row.c[4]?.v || '';  
         const priceOld = row.c[5]?.v || null; 
-        const link = row.c[8]?.v || '#'; // Ссылка в колонке I
+        const link = row.c[8]?.v || '#'; 
         
         const photoValue = row.c[6]?.v ? String(row.c[6].v) : '';
         const firstPhotoId = photoValue.split(',')[0].trim();
         
-        // Диагностика: выводим в консоль путь, который пытается найти скрипт
+        // Попытка забрать фото. Если по-прежнему 404, мы сменим стратегию на след. шаге
         const imgUrl = firstPhotoId ? `photos/${firstPhotoId}.jpg` : 'https://via.placeholder.com/300x400?text=4MENS';
 
         const card = document.createElement('div');
         card.className = 'product-card';
         card.innerHTML = `
             <div class="img-container">
-                <img src="${imgUrl}" class="product-img" onerror="this.src='https://via.placeholder.com/300x400?text=Нет+фото';">
+                <img src="${imgUrl}" class="product-img" onerror="this.src='https://via.placeholder.com/300x400?text=Загрузка+фото...';">
             </div>
             <div class="product-info">
                 <div class="product-brand">${brand}</div>
                 <div class="product-name">${name}</div>
-                <div class="product-seller">Магазин: ${seller}</div>
+                <div class="product-seller">Продавец: ${seller}</div>
                 <div class="price-row">
                     <span class="price-new">${priceNew} ₽</span>
                     ${priceOld ? `<span class="price-old">${priceOld} ₽</span>` : ''}
