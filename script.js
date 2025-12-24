@@ -68,7 +68,7 @@ function renderProducts(filter) {
         
         if (filter !== 'Все' && f.Category !== filter) return;
 
-        let imgUrl = 'https://via.placeholder.com/300x400?text=No+Img';
+        let imgUrl = 'https://via.placeholder.com/300x400?text=...';
         if (f.Photo && f.Photo.length > 0) {
             imgUrl = f.Photo[0].thumbnails?.large?.url || f.Photo[0].url;
         }
@@ -80,9 +80,10 @@ function renderProducts(filter) {
         const btnText = isAdded ? 'Добавлено' : 'В корзину';
         const btnClass = isAdded ? 'buy-btn added' : 'buy-btn';
 
+        // ИЗМЕНЕНИЕ: data-src вместо src для ленивой загрузки
         card.innerHTML = `
             <div class="img-container">
-                <img src="${imgUrl}" class="product-img" loading="lazy" referrerpolicy="no-referrer">
+                <img data-src="${imgUrl}" class="product-img lazy-load" referrerpolicy="no-referrer">
             </div>
             <div class="product-info">
                 <div class="product-brand">${f.Brand || ''}</div>
@@ -98,6 +99,27 @@ function renderProducts(filter) {
         `;
         grid.appendChild(card);
     });
+
+    // Запускаем наблюдатель за картинками после рендера
+    observeImages();
+}
+
+// ФУНКЦИЯ ЛЕНИВОЙ ЗАГРУЗКИ
+function observeImages() {
+    const images = document.querySelectorAll('img.lazy-load');
+    
+    const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                img.src = img.dataset.src; // Загружаем картинку
+                img.onload = () => img.classList.add('loaded'); // Показываем плавно
+                observer.unobserve(img); // Перестаем следить за загруженной
+            }
+        });
+    }, { rootMargin: "50px" }); // Начинаем грузить чуть заранее (за 50px до появления)
+
+    images.forEach(img => observer.observe(img));
 }
 
 window.toggleCart = function(id) {
@@ -137,10 +159,7 @@ function showCart() {
     document.getElementById('categories-nav').style.display = 'none';
     document.getElementById('cart-view').style.display = 'block';
     tg.BackButton.show();
-    
-    // ВАЖНО: При входе в корзину показываем обычный режим (без ссылок)
     renderCartItems(false);
-    
     updateMainButton();
 }
 
@@ -152,8 +171,6 @@ function showCatalog() {
     updateMainButton();
 }
 
-// ФУНКЦИЯ ОТРИСОВКИ КОРЗИНЫ
-// Параметр showLinks: false = режим редактирования, true = режим покупки (после отправки)
 function renderCartItems(showLinks = false) {
     const container = document.getElementById('cart-items');
     container.innerHTML = '';
@@ -170,12 +187,8 @@ function renderCartItems(showLinks = false) {
 
         const price = f.Price || 0;
         totalPrice += price;
-        
         const sellerName = f.Seller || 'магазин';
-
-        // ЛОГИКА ВИДИМОСТИ КНОПОК
-        // Если showLinks = false -> Скрываем кнопку "Купить", показываем "Удалить"
-        // Если showLinks = true  -> Показываем кнопку "Купить", скрываем "Удалить"
+        
         const buyBtnStyle = showLinks ? 'display: block;' : 'display: none;';
         const deleteBtnStyle = showLinks ? 'display: none;' : 'display: block;';
 
@@ -207,10 +220,7 @@ function renderCartItems(showLinks = false) {
 window.removeFromCartInView = function(id) {
     delete cart[id];
     if (Object.keys(cart).length === 0) showCatalog();
-    else { 
-        renderCartItems(false); // При удалении перерисовываем в обычном режиме
-        updateMainButton(); 
-    }
+    else { renderCartItems(false); updateMainButton(); }
 }
 
 async function sendOrderToAirtable() {
@@ -221,10 +231,7 @@ async function sendOrderToAirtable() {
     const name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Аноним';
 
     const itemsList = Object.values(cart).map(i => `${i.fields.Name} (${i.fields.Price}р)`).join('\n');
-    
-    // ДОБАВЛЯЕМ ССЫЛКИ ДЛЯ ОТЧЕТА
     const linksList = Object.values(cart).map(i => i.fields.Link).join('\n');
-    
     const total = Object.values(cart).reduce((sum, i) => sum + (i.fields.Price || 0), 0);
 
     const orderData = {
@@ -233,7 +240,7 @@ async function sendOrderToAirtable() {
             "Client_Username": username,
             "Total": total,
             "Items": itemsList,
-            "Links": linksList, // Отправляем ссылки в новую колонку
+            "Links": linksList,
             "Status": "New"
         }
     };
@@ -241,10 +248,7 @@ async function sendOrderToAirtable() {
     try {
         const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${ORDERS_TABLE}`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Authorization': `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
             body: JSON.stringify(orderData)
         });
 
@@ -252,41 +256,25 @@ async function sendOrderToAirtable() {
 
         if (response.ok) {
             tg.MainButton.hideProgress();
-            
             tg.showAlert('Заказ зафиксирован! Теперь оформите покупку и доставку в онлайн-магазинах по кнопкам ниже.');
-            
-            // МАГИЯ: Перерисовываем корзину, включая режим "showLinks = true"
             renderCartItems(true);
-
             tg.MainButton.setText('ВЕРНУТЬСЯ В КАТАЛОГ');
             tg.MainButton.color = '#000000';
-            tg.MainButton.onClick(() => {
-                window.location.reload(); 
-            });
-
+            tg.MainButton.onClick(() => { window.location.reload(); });
         } else {
             console.error('Airtable error:', result);
             throw new Error(result.error ? result.error.message : 'Неизвестная ошибка');
         }
     } catch (e) {
         tg.MainButton.hideProgress();
-        tg.showAlert(`Ошибка Airtable: ${e.message}. Проверьте названия колонок!`);
+        tg.showAlert(`Ошибка Airtable: ${e.message}`);
     }
 }
 
 tg.MainButton.onClick(function() {
+    if (tg.MainButton.text === 'ВЕРНУТЬСЯ В КАТАЛОГ') { window.location.reload(); return; }
     const isCartView = document.getElementById('cart-view').style.display !== 'none';
-    
-    if (tg.MainButton.text === 'ВЕРНУТЬСЯ В КАТАЛОГ') {
-         window.location.reload();
-         return;
-    }
-
-    if (isCartView) {
-        sendOrderToAirtable();
-    } else {
-        showCart();
-    }
+    if (isCartView) { sendOrderToAirtable(); } else { showCart(); }
 });
 
 loadProducts();
