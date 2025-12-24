@@ -1,6 +1,6 @@
 const AIRTABLE_TOKEN = 'pat5N4CqgXAwZElAT.b8463357d882ad2069a5f2856a0473a8ce14fe405da14e4497be9e26daa85ee0';
 const BASE_ID = 'appxIrQj687aVwaEF';
-const TABLE_NAME = 'Sheet1'; // ИСПРАВЛЕНО: теперь точно как у тебя
+const TABLE_NAME = 'Sheet1';
 
 const tg = window.Telegram.WebApp;
 tg.expand();
@@ -9,31 +9,23 @@ tg.ready();
 let allProducts = [];
 
 async function loadProducts() {
-    // encodeURIComponent нужен, чтобы пробелы в названии таблицы не ломали ссылку
     const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(TABLE_NAME)}`;
     
     try {
         const response = await fetch(url, {
-            headers: { 
-                'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
-                'Content-Type': 'application/json'
-            }
+            headers: { 'Authorization': `Bearer ${AIRTABLE_TOKEN}` }
         });
-        
         const data = await response.json();
-
-        if (data.error) {
-            console.error('Airtable Error:', data.error);
-            document.getElementById('product-grid').innerHTML = `<p style="padding:20px;">Ошибка: ${data.error.message}</p>`;
-            return;
+        
+        if (data.records) {
+            allProducts = data.records;
+            renderCategories();
+            renderProducts('Все');
+        } else {
+            throw new Error('Данные не найдены');
         }
-
-        allProducts = data.records;
-        renderCategories();
-        renderProducts('Все');
     } catch (e) {
-        console.error('Fetch Error:', e);
-        document.getElementById('product-grid').innerHTML = '<p style="padding:20px;">Не удалось связаться с базой данных.</p>';
+        document.getElementById('product-grid').innerHTML = `<p>Ошибка: ${e.message}</p>`;
     }
 }
 
@@ -45,8 +37,6 @@ function renderCategories() {
     });
 
     const nav = document.getElementById('categories');
-    if (!nav) return;
-    
     nav.innerHTML = '';
     categories.forEach(cat => {
         const btn = document.createElement('button');
@@ -70,15 +60,17 @@ function renderProducts(filter) {
         const f = record.fields;
         if (filter !== 'Все' && f.Category !== filter) return;
 
-        const imgUrl = (f.Photo && f.Photo.length > 0) 
-            ? f.Photo[0].url 
-            : 'https://via.placeholder.com/300x400?text=4MENS';
+        // УМНЫЙ ПОИСК ФОТО: ищем в полях Photo, photo или Image
+        const photoField = f.Photo || f.photo || f.Image || f.Attachments;
+        const imgUrl = (photoField && photoField.length > 0) 
+            ? photoField[0].url 
+            : 'https://via.placeholder.com/300x400?text=Нет+фото';
 
         const card = document.createElement('div');
         card.className = 'product-card';
         card.innerHTML = `
             <div class="img-container">
-                <img src="${imgUrl}" class="product-img">
+                <img src="${imgUrl}" class="product-img" alt="Product">
             </div>
             <div class="product-info">
                 <div class="product-brand">${f.Brand || ''}</div>
