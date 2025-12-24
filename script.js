@@ -137,7 +137,10 @@ function showCart() {
     document.getElementById('categories-nav').style.display = 'none';
     document.getElementById('cart-view').style.display = 'block';
     tg.BackButton.show();
-    renderCartItems();
+    
+    // ВАЖНО: При входе в корзину показываем обычный режим (без ссылок)
+    renderCartItems(false);
+    
     updateMainButton();
 }
 
@@ -149,8 +152,9 @@ function showCatalog() {
     updateMainButton();
 }
 
-// Рендер элементов корзины (теперь с кнопкой Ссылки!)
-function renderCartItems() {
+// ФУНКЦИЯ ОТРИСОВКИ КОРЗИНЫ
+// Параметр showLinks: false = режим редактирования, true = режим покупки (после отправки)
+function renderCartItems(showLinks = false) {
     const container = document.getElementById('cart-items');
     container.innerHTML = '';
     let totalPrice = 0;
@@ -169,6 +173,12 @@ function renderCartItems() {
         
         const sellerName = f.Seller || 'магазин';
 
+        // ЛОГИКА ВИДИМОСТИ КНОПОК
+        // Если showLinks = false -> Скрываем кнопку "Купить", показываем "Удалить"
+        // Если showLinks = true  -> Показываем кнопку "Купить", скрываем "Удалить"
+        const buyBtnStyle = showLinks ? 'display: block;' : 'display: none;';
+        const deleteBtnStyle = showLinks ? 'display: none;' : 'display: block;';
+
         const el = document.createElement('div');
         el.className = 'cart-item';
         el.innerHTML = `
@@ -182,10 +192,10 @@ function renderCartItems() {
                 </div>
             </div>
             <div class="cart-actions">
-                <button class="cart-link-btn" onclick="tg.openLink('${f.Link}')">
+                <button class="cart-link-btn" style="${buyBtnStyle}" onclick="tg.openLink('${f.Link}')">
                     Купить на ${sellerName}
                 </button>
-                <button class="cart-delete" onclick="removeFromCartInView('${id}')">Удалить</button>
+                <button class="cart-delete" style="${deleteBtnStyle}" onclick="removeFromCartInView('${id}')">Удалить</button>
             </div>
         `;
         container.appendChild(el);
@@ -197,10 +207,12 @@ function renderCartItems() {
 window.removeFromCartInView = function(id) {
     delete cart[id];
     if (Object.keys(cart).length === 0) showCatalog();
-    else { renderCartItems(); updateMainButton(); }
+    else { 
+        renderCartItems(false); // При удалении перерисовываем в обычном режиме
+        updateMainButton(); 
+    }
 }
 
-// ОТПРАВКА ЗАКАЗА С ДИАГНОСТИКОЙ ОШИБОК
 async function sendOrderToAirtable() {
     tg.MainButton.showProgress();
 
@@ -209,6 +221,10 @@ async function sendOrderToAirtable() {
     const name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Аноним';
 
     const itemsList = Object.values(cart).map(i => `${i.fields.Name} (${i.fields.Price}р)`).join('\n');
+    
+    // ДОБАВЛЯЕМ ССЫЛКИ ДЛЯ ОТЧЕТА
+    const linksList = Object.values(cart).map(i => i.fields.Link).join('\n');
+    
     const total = Object.values(cart).reduce((sum, i) => sum + (i.fields.Price || 0), 0);
 
     const orderData = {
@@ -217,6 +233,7 @@ async function sendOrderToAirtable() {
             "Client_Username": username,
             "Total": total,
             "Items": itemsList,
+            "Links": linksList, // Отправляем ссылки в новую колонку
             "Status": "New"
         }
     };
@@ -231,46 +248,35 @@ async function sendOrderToAirtable() {
             body: JSON.stringify(orderData)
         });
 
-        // ВАЖНО: Получаем ответ сервера, даже если там ошибка
         const result = await response.json();
 
         if (response.ok) {
             tg.MainButton.hideProgress();
             
-            // НОВОЕ СООБЩЕНИЕ И ЛОГИКА
             tg.showAlert('Заказ зафиксирован! Теперь оформите покупку и доставку в онлайн-магазинах по кнопкам ниже.');
             
-            // Меняем текст главной кнопки, чтобы она не смущала
+            // МАГИЯ: Перерисовываем корзину, включая режим "showLinks = true"
+            renderCartItems(true);
+
             tg.MainButton.setText('ВЕРНУТЬСЯ В КАТАЛОГ');
             tg.MainButton.color = '#000000';
             tg.MainButton.onClick(() => {
-                // При следующем нажатии - чистим корзину и идем в каталог
-                cart = {};
-                showCatalog();
-                renderProducts('Все');
-                // Возвращаем стандартное поведение кнопки (через перезагрузку обработчика это сложно, проще перезагрузить страницу или логику)
-                // Но для простоты сейчас так:
                 window.location.reload(); 
             });
 
         } else {
-            // Если ошибка Airtable - показываем её текст
             console.error('Airtable error:', result);
             throw new Error(result.error ? result.error.message : 'Неизвестная ошибка');
         }
     } catch (e) {
         tg.MainButton.hideProgress();
-        // ВЫВОДИМ ТОЧНУЮ ОШИБКУ НА ЭКРАН
         tg.showAlert(`Ошибка Airtable: ${e.message}. Проверьте названия колонок!`);
     }
 }
 
 tg.MainButton.onClick(function() {
-    // Внимание: внутри функции sendOrderToAirtable мы переопределяем onClick при успехе.
-    // Это стандартная обработка до успеха:
     const isCartView = document.getElementById('cart-view').style.display !== 'none';
     
-    // Проверка текста кнопки, чтобы не зациклить отправку
     if (tg.MainButton.text === 'ВЕРНУТЬСЯ В КАТАЛОГ') {
          window.location.reload();
          return;
