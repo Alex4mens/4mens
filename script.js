@@ -1,6 +1,6 @@
 const AIRTABLE_TOKEN = 'pat5N4CqgXAwZElAT.b8463357d882ad2069a5f2856a0473a8ce14fe405da14e4497be9e26daa85ee0';
 const BASE_ID = 'appxIrQj687aVwaEF';
-const TABLE_NAME = 'Table1'; // Проверь название таблицы в Airtable!
+const TABLE_NAME = 'Sheet1'; // ИСПРАВЛЕНО: теперь точно как у тебя
 
 const tg = window.Telegram.WebApp;
 tg.expand();
@@ -9,6 +9,7 @@ tg.ready();
 let allProducts = [];
 
 async function loadProducts() {
+    // encodeURIComponent нужен, чтобы пробелы в названии таблицы не ломали ссылку
     const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(TABLE_NAME)}`;
     
     try {
@@ -19,16 +20,20 @@ async function loadProducts() {
             }
         });
         
-        if (!response.ok) throw new Error('Ошибка сети или токена');
-        
         const data = await response.json();
+
+        if (data.error) {
+            console.error('Airtable Error:', data.error);
+            document.getElementById('product-grid').innerHTML = `<p style="padding:20px;">Ошибка: ${data.error.message}</p>`;
+            return;
+        }
+
         allProducts = data.records;
-        
         renderCategories();
         renderProducts('Все');
     } catch (e) {
-        console.error('Ошибка Airtable:', e);
-        document.getElementById('product-grid').innerHTML = '<p style="text-align:center;">Ошибка загрузки. Проверьте Token и Base ID.</p>';
+        console.error('Fetch Error:', e);
+        document.getElementById('product-grid').innerHTML = '<p style="padding:20px;">Не удалось связаться с базой данных.</p>';
     }
 }
 
@@ -63,11 +68,8 @@ function renderProducts(filter) {
 
     allProducts.forEach(record => {
         const f = record.fields;
-        
-        // Фильтрация по категории
         if (filter !== 'Все' && f.Category !== filter) return;
 
-        // Получаем URL фото из вложений Airtable
         const imgUrl = (f.Photo && f.Photo.length > 0) 
             ? f.Photo[0].url 
             : 'https://via.placeholder.com/300x400?text=4MENS';
@@ -76,7 +78,7 @@ function renderProducts(filter) {
         card.className = 'product-card';
         card.innerHTML = `
             <div class="img-container">
-                <img src="${imgUrl}" class="product-img" loading="lazy">
+                <img src="${imgUrl}" class="product-img">
             </div>
             <div class="product-info">
                 <div class="product-brand">${f.Brand || ''}</div>
