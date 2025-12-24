@@ -67,8 +67,6 @@ function renderProducts(filter) {
         
         if (filter !== 'Все' && f.Category !== filter) return;
 
-        // НОВАЯ ЛОГИКА: Берем ссылку из колонки Photo_Link
-        // Если там пусто - ставим заглушку
         let imgUrl = f.Photo_Link ? f.Photo_Link : 'https://via.placeholder.com/300x400?text=Нет+фото';
 
         const card = document.createElement('div');
@@ -77,6 +75,10 @@ function renderProducts(filter) {
         const isAdded = cart[id] ? true : false;
         const btnText = isAdded ? 'Добавлено' : 'В корзину';
         const btnClass = isAdded ? 'buy-btn added' : 'buy-btn';
+
+        // ЛОГИКА СТАРОЙ ЦЕНЫ:
+        // Проверяем, есть ли OldPrice. Если есть - добавляем HTML с зачеркиванием.
+        const oldPriceHtml = f.OldPrice ? `<span class="price-old">${f.OldPrice.toLocaleString()} ₽</span>` : '';
 
         card.innerHTML = `
             <div class="img-container">
@@ -88,6 +90,7 @@ function renderProducts(filter) {
                 <div class="product-seller">${f.Seller || ''}</div>
                 <div class="price-row">
                     <span class="price-new">${f.Price ? f.Price.toLocaleString() : 0} ₽</span>
+                    ${oldPriceHtml}
                 </div>
                 <button class="${btnClass}" id="btn-${id}" onclick="toggleCart('${id}')">
                     ${btnText}
@@ -174,7 +177,6 @@ function renderCartItems(showLinks = false) {
         const f = item.fields;
         const id = item.id;
         
-        // В корзине тоже берем ссылку из Photo_Link
         let imgUrl = f.Photo_Link ? f.Photo_Link : 'https://via.placeholder.com/100';
 
         const price = f.Price || 0;
@@ -247,26 +249,4 @@ async function sendOrderToAirtable() {
         const result = await response.json();
 
         if (response.ok) {
-            tg.MainButton.hideProgress();
-            tg.showAlert('Заказ зафиксирован! Теперь оформите покупку и доставку в онлайн-магазинах по кнопкам ниже.');
-            renderCartItems(true);
-            tg.MainButton.setText('ВЕРНУТЬСЯ В КАТАЛОГ');
-            tg.MainButton.color = '#000000';
-            tg.MainButton.onClick(() => { window.location.reload(); });
-        } else {
-            console.error('Airtable error:', result);
-            throw new Error(result.error ? result.error.message : 'Неизвестная ошибка');
-        }
-    } catch (e) {
-        tg.MainButton.hideProgress();
-        tg.showAlert(`Ошибка Airtable: ${e.message}`);
-    }
-}
-
-tg.MainButton.onClick(function() {
-    if (tg.MainButton.text === 'ВЕРНУТЬСЯ В КАТАЛОГ') { window.location.reload(); return; }
-    const isCartView = document.getElementById('cart-view').style.display !== 'none';
-    if (isCartView) { sendOrderToAirtable(); } else { showCart(); }
-});
-
-loadProducts();
+            tg.MainButton.hideProgress
