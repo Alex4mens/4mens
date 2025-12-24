@@ -9,7 +9,6 @@ tg.ready();
 let allProducts = [];
 
 async function loadProducts() {
-    // Добавляем случайное число к ссылке, чтобы телефон не брал старые данные из кэша
     const cacheBuster = Date.now();
     const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(TABLE_NAME)}?cacheBust=${cacheBuster}`;
     
@@ -64,23 +63,26 @@ function renderProducts(filter) {
         const f = record.fields;
         if (filter !== 'Все' && f.Category !== filter) return;
 
-        // ЛОГИКА ДЛЯ ФОТО: ищем сначала "большую миниатюру", она лучше всего для телефонов
-        let imgUrl = 'https://via.placeholder.com/300x400?text=Нет+фото';
+        let finalImgUrl = 'https://via.placeholder.com/300x400?text=Нет+фото';
         
         if (f.Photo && f.Photo.length > 0) {
-            const photo = f.Photo[0];
-            // Пытаемся взять крупную миниатюру (large), если нет - оригинал (url)
-            imgUrl = (photo.thumbnails && photo.thumbnails.large) ? photo.thumbnails.large.url : photo.url;
+            // Берем обычную ссылку из Airtable
+            const rawUrl = f.Photo[0].url;
+            
+            // ПРОКСИ-РЕШЕНИЕ: Прогоняем через weserv.nl для стабильности на смартфонах
+            // Убираем протокол http/https из ссылки для прокси
+            const cleanUrl = rawUrl.replace(/^https?:\/\//, '');
+            finalImgUrl = `https://images.weserv.nl/?url=${cleanUrl}&w=400&h=533&fit=cover`;
         }
 
         const card = document.createElement('div');
         card.className = 'product-card';
         card.innerHTML = `
             <div class="img-container">
-                <img src="${imgUrl}" 
+                <img src="${finalImgUrl}" 
                      class="product-img" 
-                     loading="lazy"
-                     referrerpolicy="no-referrer">
+                     alt="Product"
+                     onerror="this.src='https://via.placeholder.com/300x400?text=Ошибка+загрузки';">
             </div>
             <div class="product-info">
                 <div class="product-brand">${f.Brand || ''}</div>
