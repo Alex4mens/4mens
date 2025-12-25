@@ -9,7 +9,33 @@
 </head>
 <body>
     
-    <div id="onboarding-view" style="display: none;"></div>
+    <div id="onboarding-overlay" style="display: none;">
+        <div class="onboarding-card">
+            <div class="slide active" id="slide-1">
+                <div class="slide-img" style="background: #333;">IMG 1</div>
+                <h2>Добро пожаловать в 4MENS</h2>
+                <p>Лучшая мужская одежда и аксессуары в одном месте.</p>
+            </div>
+            <div class="slide" id="slide-2">
+                <div class="slide-img" style="background: #555;">IMG 2</div>
+                <h2>Выбирайте стиль</h2>
+                <p>Удобный каталог по категориям: Одежда, Обувь, Аксессуары.</p>
+            </div>
+            <div class="slide" id="slide-3">
+                <div class="slide-img" style="background: #777;">IMG 3</div>
+                <h2>Покупайте легко</h2>
+                <p>Собирайте корзину здесь, а оплачивайте в любимых магазинах.</p>
+            </div>
+
+            <div class="dots-container">
+                <span class="dot active" id="dot-1"></span>
+                <span class="dot" id="dot-2"></span>
+                <span class="dot" id="dot-3"></span>
+            </div>
+            
+            <button class="onboarding-btn" id="next-btn" onclick="nextSlide()">Далее</button>
+        </div>
+    </div>
 
     <div id="home-view">
         <header class="home-header">
