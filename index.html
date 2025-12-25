@@ -8,31 +8,68 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-    <header>
-        <div class="header-content">
-            <h1>4MENS</h1>
-        </div>
-        <div id="categories-nav">
-            <div id="categories"></div>
-        </div>
-    </header>
+    
+    <div id="onboarding-view" style="display: none;"></div>
 
-    <main>
-        <div id="product-grid" class="product-grid">
-            <p style="text-align: center; padding: 40px; color: #888;">Загрузка...</p>
-        </div>
-
-        <div id="cart-view" style="display: none;">
-            <h3 style="margin-bottom: 15px; font-size: 18px; font-weight: 800;">Ваш заказ</h3>
-            
-            <div id="cart-items"></div>
-            
-            <div class="cart-total">
-                <span>Итого:</span>
-                <span id="total-price">0 ₽</span>
+    <div id="home-view">
+        <header class="home-header">
+            <div class="logo-area">
+                <h1>4MENS</h1>
+                <p>Мужская одежда, обувь, аксессуары</p>
             </div>
+        </header>
+        
+        <main class="home-main">
+            <div class="main-banner">
+                <div class="banner-text">Новая коллекция</div>
+            </div>
+
+            <div class="main-menu">
+                <div class="menu-card" onclick="openCategoryType('Одежда')">
+                    <h2>Одежда</h2>
+                    <span class="arrow">→</span>
+                </div>
+                <div class="menu-card" onclick="openCategoryType('Обувь')">
+                    <h2>Обувь</h2>
+                    <span class="arrow">→</span>
+                </div>
+                <div class="menu-card" onclick="openCategoryType('Аксессуары')">
+                    <h2>Аксессуары</h2>
+                    <span class="arrow">→</span>
+                </div>
+            </div>
+            
+            <button class="blog-btn" onclick="Telegram.WebApp.openTelegramLink('https://t.me/+vSCbLDoZgxkxYmI6')">
+                Читать наш Блог
+            </button>
+        </main>
+    </div>
+
+    <div id="catalog-view" style="display: none;">
+        <header>
+            <div class="header-content">
+                <h1 id="catalog-title">Каталог</h1>
+            </div>
+            <div id="categories-nav">
+                <div id="categories"></div>
+            </div>
+        </header>
+
+        <main>
+            <div id="product-grid" class="product-grid">
+                <p style="text-align: center; padding: 40px; color: #888;">Загрузка...</p>
+            </div>
+        </main>
+    </div>
+
+    <div id="cart-view" style="display: none;">
+        <h3 style="margin-bottom: 15px; font-size: 18px; font-weight: 800;">Ваш заказ</h3>
+        <div id="cart-items"></div>
+        <div class="cart-total">
+            <span>Итого:</span>
+            <span id="total-price">0 ₽</span>
         </div>
-    </main>
+    </div>
 
     <script src="script.js"></script>
 </body>
