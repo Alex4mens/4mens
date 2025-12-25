@@ -2,12 +2,61 @@
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 body { background-color: #f4f4f7; color: #000; padding-bottom: 80px; }
 
-/* Шапка */
+/* --- ГЛАВНАЯ СТРАНИЦА --- */
+#home-view { padding: 15px; min-height: 100vh; display: flex; flex-direction: column; }
+
+.home-header { padding: 20px 0; text-align: center; margin-bottom: 10px; }
+.logo-area h1 { font-size: 28px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
+.logo-area p { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+
+.main-banner {
+    background: #222; /* Потом заменим на картинку */
+    color: #fff;
+    height: 140px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+.banner-text { font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+
+.main-menu { display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px; }
+
+.menu-card {
+    background: #fff;
+    padding: 25px 20px;
+    border-radius: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+.menu-card:active { transform: scale(0.98); }
+.menu-card h2 { font-size: 18px; font-weight: 700; }
+.menu-card .arrow { font-size: 20px; color: #ccc; }
+
+.blog-btn {
+    width: 100%;
+    background: transparent;
+    border: 2px solid #000;
+    padding: 14px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 14px;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: auto; /* Прижимает к низу, если есть место */
+}
+
+/* --- КАТАЛОГ И ШАПКА --- */
 header { background: #fff; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
 .header-content { padding: 15px; text-align: center; }
 h1 { font-size: 20px; font-weight: 900; letter-spacing: 1px; }
 
-/* Категории */
 #categories-nav { border-top: 1px solid #eee; overflow-x: auto; white-space: nowrap; padding: 10px 15px; }
 #categories-nav::-webkit-scrollbar { display: none; }
 #categories { display: flex; gap: 10px; }
@@ -21,16 +70,9 @@ h1 { font-size: 20px; font-weight: 900; letter-spacing: 1px; }
 
 .img-container { aspect-ratio: 3 / 4; background: #eeeeee; position: relative; overflow: hidden; }
 
-/* Изменения для ленивой загрузки */
-.product-img { 
-    width: 100%; 
-    height: 100%; 
-    object-fit: cover; 
-    display: block; 
-    opacity: 0; /* Скрыта, пока не загрузится */
-    transition: opacity 0.3s ease-in; 
-}
-.product-img.loaded { opacity: 1; } /* Появляется плавно */
+/* Ленивая загрузка */
+.product-img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity 0.3s ease-in; }
+.product-img.loaded { opacity: 1; } 
 
 .product-info { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; }
 .product-brand { font-weight: 800; font-size: 11px; text-transform: uppercase; color: #000; margin-bottom: 4px; }
@@ -44,7 +86,7 @@ h1 { font-size: 20px; font-weight: 900; letter-spacing: 1px; }
 .buy-btn { width: 100%; background: #000; color: #fff; border: none; padding: 10px 0; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; }
 .buy-btn.added { background: #2ea043; }
 
-/* КОРЗИНА */
+/* --- КОРЗИНА --- */
 #cart-view { padding: 15px; }
 .cart-item { display: flex; flex-direction: column; background: #fff; border-radius: 12px; padding: 10px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
 .cart-main-row { display: flex; align-items: center; width: 100%; margin-bottom: 10px; }
