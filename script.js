@@ -8,41 +8,94 @@ tg.expand();
 
 let cart = {}; 
 let allProducts = [];
+let currentType = null; // Запоминаем, в каком мы разделе (Одежда/Обувь)
 
 tg.MainButton.textColor = '#FFFFFF';
 tg.MainButton.color = '#000000';
 
-tg.BackButton.onClick(() => { showCatalog(); });
+// Умная кнопка НАЗАД
+tg.BackButton.onClick(() => { 
+    if (document.getElementById('cart-view').style.display !== 'none') {
+        // Если мы в корзине -> идем в каталог
+        showCatalog(currentType);
+    } else if (document.getElementById('catalog-view').style.display !== 'none') {
+        // Если мы в каталоге -> идем на главную
+        showHome();
+    }
+});
 
 async function loadProducts() {
+    // Грузим товары сразу при старте, но показываем Главную
     const cacheBuster = Date.now();
     const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(CATALOG_TABLE)}?cacheBust=${cacheBuster}`;
     
     try {
         const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_TOKEN}` } });
         const data = await response.json();
-        
         if (data.records) {
             allProducts = data.records;
-            renderCategories();
-            renderProducts('Все');
-        } else {
-            document.getElementById('product-grid').innerHTML = '<p style="padding:20px; text-align:center">Каталог пуст</p>';
+            // Товары загружены, пользователь на Главной и готов кликать
         }
     } catch (e) {
         console.error(e);
     }
 }
 
-function renderCategories() {
-    const categories = new Set(['Все']);
-    allProducts.forEach(r => { if (r.fields.Category) categories.add(r.fields.Category); });
+// 1. ОТКРЫТИЕ ГЛАВНОЙ
+function showHome() {
+    document.getElementById('home-view').style.display = 'flex';
+    document.getElementById('catalog-view').style.display = 'none';
+    document.getElementById('cart-view').style.display = 'none';
+    tg.BackButton.hide();
+    updateMainButton(); // Скрываем кнопку заказа на главной
+}
 
-    const nav = document.getElementById('categories');
-    if (!nav) return;
-    nav.innerHTML = '';
+// 2. ОТКРЫТИЕ РАЗДЕЛА (Одежда, Обувь...)
+window.openCategoryType = function(typeName) {
+    currentType = typeName; // Запоминаем выбор
     
-    categories.forEach(cat => {
+    // Фильтруем товары только этого типа
+    const filteredProducts = allProducts.filter(p => p.fields.Type === typeName);
+
+    if (filteredProducts.length === 0) {
+        tg.showAlert(`Раздел "${typeName}" пока пуст. Скоро здесь появится много всего хорошего!`);
+        return;
+    }
+
+    // Если товары есть - переходим в каталог
+    showCatalog(typeName);
+}
+
+// 3. ПОКАЗ КАТАЛОГА
+function showCatalog(typeName) {
+    document.getElementById('home-view').style.display = 'none';
+    document.getElementById('cart-view').style.display = 'none';
+    document.getElementById('catalog-view').style.display = 'block';
+    
+    document.getElementById('catalog-title').innerText = typeName; // Меняем заголовок
+    tg.BackButton.show();
+
+    // Рендерим подкатегории (чипсы) только для этого типа
+    renderSubCategories(typeName);
+    // Показываем товары
+    renderProducts(typeName, 'Все');
+    updateMainButton();
+}
+
+// Рендер кнопок подкатегорий
+function renderSubCategories(typeName) {
+    const nav = document.getElementById('categories');
+    nav.innerHTML = '';
+
+    // Собираем уникальные подкатегории (Category) только из товаров выбранного Type
+    const subCategories = new Set(['Все']);
+    allProducts.forEach(r => { 
+        if (r.fields.Type === typeName && r.fields.Category) {
+            subCategories.add(r.fields.Category); 
+        }
+    });
+
+    subCategories.forEach(cat => {
         const btn = document.createElement('button');
         btn.className = 'cat-btn';
         btn.innerText = cat;
@@ -51,23 +104,37 @@ function renderCategories() {
         btn.onclick = () => {
             document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            renderProducts(cat);
+            renderProducts(typeName, cat); // Фильтруем и по типу, и по подкатегории
         };
         nav.appendChild(btn);
     });
 }
 
-function renderProducts(filter) {
+// Рендер товаров
+function renderProducts(typeName, subCategoryFilter) {
     const grid = document.getElementById('product-grid');
     grid.innerHTML = '';
 
-    allProducts.forEach(record => {
+    const productsToShow = allProducts.filter(r => {
+        const f = r.fields;
+        // Главный фильтр: Тип должен совпадать
+        if (f.Type !== typeName) return false;
+        // Вторичный фильтр: Подкатегория (если не "Все")
+        if (subCategoryFilter !== 'Все' && f.Category !== subCategoryFilter) return false;
+        return true;
+    });
+
+    if (productsToShow.length === 0) {
+        grid.innerHTML = '<p style="padding:40px; text-align:center; grid-column: 1/-1; color:#999;">В этой категории пока пусто</p>';
+        return;
+    }
+
+    productsToShow.forEach(record => {
         const f = record.fields;
         const id = record.id;
         
-        if (filter !== 'Все' && f.Category !== filter) return;
-
         let imgUrl = f.Photo_Link ? f.Photo_Link : 'https://via.placeholder.com/300x400?text=Нет+фото';
+        const oldPriceHtml = f.OldPrice ? `<span class="price-old">${f.OldPrice.toLocaleString()} ₽</span>` : '';
 
         const card = document.createElement('div');
         card.className = 'product-card';
@@ -75,10 +142,6 @@ function renderProducts(filter) {
         const isAdded = cart[id] ? true : false;
         const btnText = isAdded ? 'Добавлено' : 'В корзину';
         const btnClass = isAdded ? 'buy-btn added' : 'buy-btn';
-
-        // ЛОГИКА СТАРОЙ ЦЕНЫ:
-        // Проверяем, есть ли OldPrice. Если есть - добавляем HTML с зачеркиванием.
-        const oldPriceHtml = f.OldPrice ? `<span class="price-old">${f.OldPrice.toLocaleString()} ₽</span>` : '';
 
         card.innerHTML = `
             <div class="img-container">
@@ -115,7 +178,6 @@ function observeImages() {
             }
         });
     }, { rootMargin: "50px" });
-
     images.forEach(img => observer.observe(img));
 }
 
@@ -135,9 +197,11 @@ window.toggleCart = function(id) {
 
 function updateMainButton() {
     const count = Object.keys(cart).length;
+    // Кнопку показываем только в каталоге или корзине (не на главной)
+    const isHome = document.getElementById('home-view').style.display !== 'none';
     const isCartView = document.getElementById('cart-view').style.display !== 'none';
 
-    if (count > 0) {
+    if (count > 0 && !isHome) {
         tg.MainButton.show();
         if (isCartView) {
             tg.MainButton.setText('ПОДТВЕРДИТЬ ЗАКАЗ');
@@ -152,19 +216,10 @@ function updateMainButton() {
 }
 
 function showCart() {
-    document.getElementById('product-grid').style.display = 'none';
-    document.getElementById('categories-nav').style.display = 'none';
+    document.getElementById('catalog-view').style.display = 'none';
     document.getElementById('cart-view').style.display = 'block';
     tg.BackButton.show();
     renderCartItems(false);
-    updateMainButton();
-}
-
-function showCatalog() {
-    document.getElementById('cart-view').style.display = 'none';
-    document.getElementById('product-grid').style.display = 'grid';
-    document.getElementById('categories-nav').style.display = 'block';
-    tg.BackButton.hide();
     updateMainButton();
 }
 
@@ -176,9 +231,7 @@ function renderCartItems(showLinks = false) {
     Object.values(cart).forEach(item => {
         const f = item.fields;
         const id = item.id;
-        
         let imgUrl = f.Photo_Link ? f.Photo_Link : 'https://via.placeholder.com/100';
-
         const price = f.Price || 0;
         totalPrice += price;
         const sellerName = f.Seller || 'магазин';
@@ -213,13 +266,17 @@ function renderCartItems(showLinks = false) {
 
 window.removeFromCartInView = function(id) {
     delete cart[id];
-    if (Object.keys(cart).length === 0) showCatalog();
-    else { renderCartItems(false); updateMainButton(); }
+    if (Object.keys(cart).length === 0) {
+        // Если корзина пуста, возвращаемся в текущий каталог
+        showCatalog(currentType);
+    } else { 
+        renderCartItems(false); 
+        updateMainButton(); 
+    }
 }
 
 async function sendOrderToAirtable() {
     tg.MainButton.showProgress();
-
     const user = tg.initDataUnsafe.user || {};
     const username = user.username ? `@${user.username}` : 'Скрыт';
     const name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Аноним';
@@ -246,29 +303,27 @@ async function sendOrderToAirtable() {
             body: JSON.stringify(orderData)
         });
 
-        const result = await response.json();
-
         if (response.ok) {
             tg.MainButton.hideProgress();
-            tg.showAlert('Заказ зафиксирован! Теперь оформите покупку и доставку в онлайн-магазинах по кнопкам ниже.');
+            tg.showAlert('Заказ зафиксирован! Перейдите в магазины по кнопкам.');
             renderCartItems(true);
-            tg.MainButton.setText('ВЕРНУТЬСЯ В КАТАЛОГ');
+            tg.MainButton.setText('НА ГЛАВНУЮ');
             tg.MainButton.color = '#000000';
             tg.MainButton.onClick(() => { window.location.reload(); });
         } else {
-            console.error('Airtable error:', result);
-            throw new Error(result.error ? result.error.message : 'Неизвестная ошибка');
+            throw new Error('Ошибка Airtable');
         }
     } catch (e) {
         tg.MainButton.hideProgress();
-        tg.showAlert(`Ошибка Airtable: ${e.message}`);
+        tg.showAlert(`Ошибка: ${e.message}`);
     }
 }
 
 tg.MainButton.onClick(function() {
-    if (tg.MainButton.text === 'ВЕРНУТЬСЯ В КАТАЛОГ') { window.location.reload(); return; }
+    if (tg.MainButton.text === 'НА ГЛАВНУЮ') { window.location.reload(); return; }
     const isCartView = document.getElementById('cart-view').style.display !== 'none';
     if (isCartView) { sendOrderToAirtable(); } else { showCart(); }
 });
 
+showHome(); // Стартуем с главной
 loadProducts();
