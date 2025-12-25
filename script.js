@@ -24,18 +24,18 @@ tg.BackButton.onClick(() => {
 
 // --- ОНБОРДИНГ ---
 function checkOnboarding() {
-    // Проверяем, видел ли пользователь слайды раньше
-    const seen = localStorage.getItem('onboarding_seen_v1');
-    if (!seen) {
+    // РЕЖИМ ТЕСТИРОВАНИЯ: Слайды показываются всегда.
+    // Чтобы включить "только 1 раз", раскомментируй строки ниже:
+    
+    // const seen = localStorage.getItem('onboarding_seen_v1');
+    // if (!seen) {
         document.getElementById('onboarding-overlay').style.display = 'flex';
-        // Пока идет обучение - прячем контент сзади (опционально)
-        document.getElementById('home-view').style.filter = 'blur(5px)';
-    }
+        // document.getElementById('home-view').style.filter = 'blur(5px)';
+    // }
 }
 
 window.nextSlide = function() {
     if (currentSlide < 3) {
-        // Переключаем вперед
         document.getElementById(`slide-${currentSlide}`).classList.remove('active');
         document.getElementById(`dot-${currentSlide}`).classList.remove('active');
         
@@ -44,13 +44,11 @@ window.nextSlide = function() {
         document.getElementById(`slide-${currentSlide}`).classList.add('active');
         document.getElementById(`dot-${currentSlide}`).classList.add('active');
 
-        // Если последний слайд - меняем текст кнопки
         if (currentSlide === 3) {
             document.getElementById('next-btn').innerText = 'Начать покупки';
-            document.getElementById('next-btn').style.background = '#2ea043'; // Зеленый
+            document.getElementById('next-btn').style.background = '#2ea043';
         }
     } else {
-        // Завершаем онбординг
         finishOnboarding();
     }
 }
@@ -58,21 +56,16 @@ window.nextSlide = function() {
 function finishOnboarding() {
     document.getElementById('onboarding-overlay').style.display = 'none';
     document.getElementById('home-view').style.filter = 'none';
-    // Записываем в память, что обучение пройдено
     localStorage.setItem('onboarding_seen_v1', 'true');
 }
-
 
 async function loadProducts() {
     const cacheBuster = Date.now();
     const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(CATALOG_TABLE)}?cacheBust=${cacheBuster}`;
-    
     try {
         const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_TOKEN}` } });
         const data = await response.json();
-        if (data.records) {
-            allProducts = data.records;
-        }
+        if (data.records) allProducts = data.records;
     } catch (e) {
         console.error(e);
     }
@@ -294,8 +287,6 @@ async function sendOrderToAirtable() {
     const linksList = Object.values(cart).map(i => i.fields.Link).join('\n');
     const total = Object.values(cart).reduce((sum, i) => sum + (i.fields.Price || 0), 0);
     
-    // НОВОЕ: Собираем уникальных продавцов
-    // Set убирает дубликаты (если 2 товара от Ламоды, будет только 1 раз "Lamoda")
     const sellersSet = new Set(Object.values(cart).map(i => i.fields.Seller || 'Unknown'));
     const sellersStr = Array.from(sellersSet).join(', ');
 
@@ -306,7 +297,7 @@ async function sendOrderToAirtable() {
             "Total": total,
             "Items": itemsList,
             "Links": linksList,
-            "Sellers": sellersStr, // Отправляем список продавцов
+            "Sellers": sellersStr,
             "Status": "New"
         }
     };
@@ -342,4 +333,4 @@ tg.MainButton.onClick(function() {
 
 showHome();
 loadProducts();
-checkOnboarding(); // Проверяем, нужно ли показать слайды
+checkOnboarding();
