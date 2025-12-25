@@ -1,72 +1,78 @@
-/* Основные настройки */
+/* RESET & FONTS */
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-body { background-color: #f4f4f7; color: #000; padding-bottom: 80px; }
+body { background-color: #f4f4f7; color: #000; padding-bottom: 80px; -webkit-font-smoothing: antialiased; }
 
-/* --- ОНБОРДИНГ --- */
+/* --- ОНБОРДИНГ (MINIMAL) --- */
 #onboarding-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: #fff; z-index: 9999;
     display: flex; align-items: center; justify-content: center;
     padding: 20px;
 }
-.onboarding-card {
-    width: 100%; max-width: 350px;
-    text-align: center;
-}
-.slide { display: none; animation: fadeIn 0.3s; }
+.onboarding-card { width: 100%; max-width: 350px; text-align: center; }
+.slide { display: none; animation: fadeIn 0.4s ease; }
 .slide.active { display: block; }
 
-.slide-img {
-    width: 100%; aspect-ratio: 1/1; 
-    border-radius: 20px; margin-bottom: 30px;
-    display: flex; align-items: center; justify-content: center;
-    color: #fff; font-size: 20px; font-weight: bold; /* Заглушка */
+/* Стиль для цифр вместо картинок */
+.slide-number {
+    font-size: 80px; font-weight: 900; color: #e0e0e0;
+    line-height: 1; margin-bottom: 20px; letter-spacing: -4px;
 }
 
-.onboarding-card h2 { font-size: 24px; font-weight: 900; margin-bottom: 10px; }
-.onboarding-card p { font-size: 15px; color: #666; line-height: 1.5; margin-bottom: 30px; min-height: 45px;}
+.onboarding-card h2 { font-size: 24px; font-weight: 900; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+.onboarding-card p { font-size: 15px; color: #666; line-height: 1.5; margin-bottom: 40px; min-height: 45px; }
 
 .dots-container { display: flex; justify-content: center; gap: 8px; margin-bottom: 30px; }
 .dot { width: 8px; height: 8px; background: #ddd; border-radius: 50%; transition: 0.3s; }
 .dot.active { background: #000; width: 24px; border-radius: 4px; }
 
 .onboarding-btn {
-    width: 100%; background: #000; color: #fff; padding: 16px; 
-    border-radius: 14px; font-size: 16px; font-weight: 700; border: none; cursor: pointer;
+    width: 100%; background: #000; color: #fff; padding: 18px; 
+    border-radius: 12px; font-size: 14px; font-weight: 700; border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
 }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-/* --- ГЛАВНАЯ СТРАНИЦА --- */
+/* --- ГЛАВНАЯ СТРАНИЦА (HERO) --- */
 #home-view { padding: 15px; min-height: 100vh; display: flex; flex-direction: column; }
-.home-header { padding: 20px 0; text-align: center; margin-bottom: 10px; }
-.logo-area h1 { font-size: 28px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
-.logo-area p { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
 
-.main-banner {
-    background: #222; color: #fff; height: 140px; border-radius: 16px;
-    display: flex; align-items: center; justify-content: center;
-    margin-bottom: 25px; box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+.hero-section {
+    background: #111; /* Почти черный */
+    color: #fff;
+    padding: 40px 20px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
 }
-.banner-text { font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+.hero-content h1 { font-size: 32px; font-weight: 900; letter-spacing: 3px; margin-bottom: 15px; }
+.hero-line { width: 40px; height: 2px; background: #fff; margin-bottom: 15px; opacity: 0.5; }
+.hero-content p { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: #ccc; line-height: 1.6; }
 
-.main-menu { display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px; }
-.menu-card {
-    background: #fff; padding: 25px 20px; border-radius: 14px;
-    display: flex; justify-content: space-between; align-items: center;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.03); cursor: pointer; transition: transform 0.1s;
+.main-menu { display: flex; flex-direction: column; gap: 15px; flex-grow: 1; }
+
+.menu-card.large {
+    background: #fff;
+    padding: 25px 25px;
+    border-radius: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+    min-height: 100px; /* Делаем кнопки высокими */
 }
-.menu-card:active { transform: scale(0.98); }
-.menu-card h2 { font-size: 18px; font-weight: 700; }
-.menu-card .arrow { font-size: 20px; color: #ccc; }
+.menu-card.large:active { transform: scale(0.98); box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
 
-.blog-btn {
-    width: 100%; background: transparent; border: 2px solid #000;
-    padding: 14px; border-radius: 12px; font-weight: 700; font-size: 14px;
-    text-transform: uppercase; cursor: pointer; margin-top: auto;
-}
+.card-content h2 { font-size: 20px; font-weight: 800; margin-bottom: 4px; letter-spacing: 0.5px; }
+.sub-text { font-size: 12px; color: #999; font-weight: 500; }
+.menu-card .arrow { font-size: 24px; color: #ddd; font-weight: 300; }
 
-/* --- КАТАЛОГ И ШАПКА --- */
+/* --- КАТАЛОГ --- */
 header { background: #fff; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
 .header-content { padding: 15px; text-align: center; }
 h1 { font-size: 20px; font-weight: 900; letter-spacing: 1px; }
