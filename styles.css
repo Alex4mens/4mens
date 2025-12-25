@@ -13,7 +13,6 @@ body { background-color: #f4f4f7; color: #000; padding-bottom: 80px; -webkit-fon
 .slide { display: none; animation: fadeIn 0.4s ease; }
 .slide.active { display: block; }
 
-/* Стиль для цифр вместо картинок */
 .slide-number {
     font-size: 80px; font-weight: 900; color: #e0e0e0;
     line-height: 1; margin-bottom: 20px; letter-spacing: -4px;
@@ -36,9 +35,10 @@ body { background-color: #f4f4f7; color: #000; padding-bottom: 80px; -webkit-fon
 #home-view { padding: 15px; min-height: 100vh; display: flex; flex-direction: column; }
 
 .hero-section {
-    background: #111; /* Почти черный */
+    background: #111;
     color: #fff;
-    padding: 40px 20px;
+    /* УВЕЛИЧИЛИ ВЫСОТУ БЛОКА ЗДЕСЬ (было 40px) */
+    padding: 70px 20px; 
     border-radius: 20px;
     margin-bottom: 20px;
     display: flex;
@@ -49,14 +49,17 @@ body { background-color: #f4f4f7; color: #000; padding-bottom: 80px; -webkit-fon
     box-shadow: 0 10px 30px rgba(0,0,0,0.15);
 }
 .hero-content h1 { font-size: 32px; font-weight: 900; letter-spacing: 3px; margin-bottom: 15px; }
-.hero-line { width: 40px; height: 2px; background: #fff; margin-bottom: 15px; opacity: 0.5; }
+
+/* ИСПРАВЛЕНИЕ ЛИНИИ: margin: 0 auto центрует её */
+.hero-line { width: 40px; height: 2px; background: #fff; margin: 0 auto 15px auto; opacity: 0.5; }
+
 .hero-content p { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: #ccc; line-height: 1.6; }
 
 .main-menu { display: flex; flex-direction: column; gap: 15px; flex-grow: 1; }
 
 .menu-card.large {
     background: #fff;
-    padding: 25px 25px;
+    padding: 0 25px; /* Убрал верт. паддинг, так как высоту задаем min-height */
     border-radius: 16px;
     display: flex;
     justify-content: space-between;
@@ -64,12 +67,22 @@ body { background-color: #f4f4f7; color: #000; padding-bottom: 80px; -webkit-fon
     box-shadow: 0 4px 15px rgba(0,0,0,0.03);
     cursor: pointer;
     transition: transform 0.1s, box-shadow 0.1s;
-    min-height: 100px; /* Делаем кнопки высокими */
+    /* УВЕЛИЧИЛИ ВЫСОТУ КНОПОК ЗДЕСЬ (было 100px) */
+    min-height: 130px; 
 }
 .menu-card.large:active { transform: scale(0.98); box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
 
-.card-content h2 { font-size: 20px; font-weight: 800; margin-bottom: 4px; letter-spacing: 0.5px; }
-.sub-text { font-size: 12px; color: #999; font-weight: 500; }
+.card-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.card-content h2 { font-size: 22px; font-weight: 800; letter-spacing: 0.5px; }
+
+/* СКРЫВАЕМ ПОДПИСИ */
+.sub-text { display: none; }
+
 .menu-card .arrow { font-size: 24px; color: #ddd; font-weight: 300; }
 
 /* --- КАТАЛОГ --- */
