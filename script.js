@@ -24,13 +24,12 @@ tg.BackButton.onClick(() => {
 
 // --- ОНБОРДИНГ ---
 function checkOnboarding() {
-    // РЕЖИМ ТЕСТИРОВАНИЯ: Слайды показываются всегда.
-    // Чтобы включить "только 1 раз", раскомментируй строки ниже:
+    // ДЛЯ ТЕСТА: Показываем всегда.
+    // Перед релизом раскомментируй строки с localStorage!
     
     // const seen = localStorage.getItem('onboarding_seen_v1');
     // if (!seen) {
         document.getElementById('onboarding-overlay').style.display = 'flex';
-        // document.getElementById('home-view').style.filter = 'blur(5px)';
     // }
 }
 
@@ -44,9 +43,10 @@ window.nextSlide = function() {
         document.getElementById(`slide-${currentSlide}`).classList.add('active');
         document.getElementById(`dot-${currentSlide}`).classList.add('active');
 
+        // Если последний слайд
         if (currentSlide === 3) {
-            document.getElementById('next-btn').innerText = 'Начать покупки';
-            document.getElementById('next-btn').style.background = '#2ea043';
+            document.getElementById('next-btn').innerText = 'Смотреть каталог';
+            // Цвет оставляем черным (убрали строку с зеленым background), так стильнее и спокойнее
         }
     } else {
         finishOnboarding();
@@ -55,7 +55,6 @@ window.nextSlide = function() {
 
 function finishOnboarding() {
     document.getElementById('onboarding-overlay').style.display = 'none';
-    document.getElementById('home-view').style.filter = 'none';
     localStorage.setItem('onboarding_seen_v1', 'true');
 }
 
