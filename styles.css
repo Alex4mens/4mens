@@ -2,54 +2,68 @@
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 body { background-color: #f4f4f7; color: #000; padding-bottom: 80px; }
 
+/* --- ОНБОРДИНГ --- */
+#onboarding-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: #fff; z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+}
+.onboarding-card {
+    width: 100%; max-width: 350px;
+    text-align: center;
+}
+.slide { display: none; animation: fadeIn 0.3s; }
+.slide.active { display: block; }
+
+.slide-img {
+    width: 100%; aspect-ratio: 1/1; 
+    border-radius: 20px; margin-bottom: 30px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 20px; font-weight: bold; /* Заглушка */
+}
+
+.onboarding-card h2 { font-size: 24px; font-weight: 900; margin-bottom: 10px; }
+.onboarding-card p { font-size: 15px; color: #666; line-height: 1.5; margin-bottom: 30px; min-height: 45px;}
+
+.dots-container { display: flex; justify-content: center; gap: 8px; margin-bottom: 30px; }
+.dot { width: 8px; height: 8px; background: #ddd; border-radius: 50%; transition: 0.3s; }
+.dot.active { background: #000; width: 24px; border-radius: 4px; }
+
+.onboarding-btn {
+    width: 100%; background: #000; color: #fff; padding: 16px; 
+    border-radius: 14px; font-size: 16px; font-weight: 700; border: none; cursor: pointer;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
 /* --- ГЛАВНАЯ СТРАНИЦА --- */
 #home-view { padding: 15px; min-height: 100vh; display: flex; flex-direction: column; }
-
 .home-header { padding: 20px 0; text-align: center; margin-bottom: 10px; }
 .logo-area h1 { font-size: 28px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
 .logo-area p { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
 
 .main-banner {
-    background: #222; /* Потом заменим на картинку */
-    color: #fff;
-    height: 140px;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 25px;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    background: #222; color: #fff; height: 140px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 25px; box-shadow: 0 10px 20px rgba(0,0,0,0.1);
 }
 .banner-text { font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
 
 .main-menu { display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px; }
-
 .menu-card {
-    background: #fff;
-    padding: 25px 20px;
-    border-radius: 14px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.03);
-    cursor: pointer;
-    transition: transform 0.1s;
+    background: #fff; padding: 25px 20px; border-radius: 14px;
+    display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.03); cursor: pointer; transition: transform 0.1s;
 }
 .menu-card:active { transform: scale(0.98); }
 .menu-card h2 { font-size: 18px; font-weight: 700; }
 .menu-card .arrow { font-size: 20px; color: #ccc; }
 
 .blog-btn {
-    width: 100%;
-    background: transparent;
-    border: 2px solid #000;
-    padding: 14px;
-    border-radius: 12px;
-    font-weight: 700;
-    font-size: 14px;
-    text-transform: uppercase;
-    cursor: pointer;
-    margin-top: auto; /* Прижимает к низу, если есть место */
+    width: 100%; background: transparent; border: 2px solid #000;
+    padding: 14px; border-radius: 12px; font-weight: 700; font-size: 14px;
+    text-transform: uppercase; cursor: pointer; margin-top: auto;
 }
 
 /* --- КАТАЛОГ И ШАПКА --- */
@@ -64,25 +78,18 @@ h1 { font-size: 20px; font-weight: 900; letter-spacing: 1px; }
 .cat-btn { padding: 8px 18px; border: 1px solid #ddd; background: #fff; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
 .cat-btn.active { background: #000; color: #fff; border-color: #000; }
 
-/* Сетка товаров */
 .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
 .product-card { background: #fff; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-
 .img-container { aspect-ratio: 3 / 4; background: #eeeeee; position: relative; overflow: hidden; }
-
-/* Ленивая загрузка */
 .product-img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity 0.3s ease-in; }
 .product-img.loaded { opacity: 1; } 
-
 .product-info { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; }
 .product-brand { font-weight: 800; font-size: 11px; text-transform: uppercase; color: #000; margin-bottom: 4px; }
 .product-name { font-size: 13px; color: #444; line-height: 1.3; height: 34px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-bottom: 8px; }
 .product-seller { font-size: 10px; color: #999; margin-bottom: auto; }
-
 .price-row { margin-top: 10px; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .price-new { font-weight: 700; font-size: 15px; }
 .price-old { text-decoration: line-through; color: #aaa; font-size: 12px; }
-
 .buy-btn { width: 100%; background: #000; color: #fff; border: none; padding: 10px 0; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; }
 .buy-btn.added { background: #2ea043; }
 
