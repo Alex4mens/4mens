@@ -1,5 +1,5 @@
 // --- НАСТРОЙКИ ---
-// ВСТАВЬ СЮДА СВОЙ НОВЫЙ КЛЮЧ (pat...)
+// ВСТАВЬ СЮДА СВОЙ НОВЫЙ КЛЮЧ
 const AIRTABLE_TOKEN = 'patxpPo8CG6FqY1nk.c1a2c87e4844501709bf709b8a0db84f875e7492a8496ba3bceedc91c7ab7294'; 
 const BASE_ID = 'appxIrQj687aVwaEF';
 
@@ -121,6 +121,7 @@ function renderSubCategories(typeName) {
     });
 }
 
+// --- ОТРИСОВКА КАРТОЧЕК С LAZY LOAD ---
 function renderProducts(typeName, subCategoryFilter) {
     const grid = document.getElementById('product-grid');
     grid.innerHTML = '';
@@ -140,18 +141,11 @@ function renderProducts(typeName, subCategoryFilter) {
         const f = record.fields;
         const id = record.id;
         
-        // --- ЛОГИКА ДЛЯ ДВУХ СТОЛБЦОВ ---
+        // БЕРЕМ ТОЛЬКО ССЫЛКУ ИЗ Photo_Link
         let imgUrl = 'https://via.placeholder.com/300x400?text=Нет+фото';
-        
-        // 1. Смотрим столбец Photo_Link (это строка с ссылкой)
         if (f.Photo_Link && typeof f.Photo_Link === 'string' && f.Photo_Link.trim() !== '') {
             imgUrl = f.Photo_Link;
-        } 
-        // 2. Если ссылки нет, смотрим столбец Photo (это массив с файлами)
-        else if (f.Photo && Array.isArray(f.Photo) && f.Photo.length > 0) {
-            imgUrl = f.Photo[0].url;
         }
-        // --------------------------------
 
         const oldPriceHtml = f.OldPrice ? `<span class="price-old">${f.OldPrice.toLocaleString()} ₽</span>` : '';
 
@@ -163,7 +157,7 @@ function renderProducts(typeName, subCategoryFilter) {
 
         card.innerHTML = `
             <div class="img-container">
-                <img src="${imgUrl}" class="product-img" referrerpolicy="no-referrer">
+                <img data-src="${imgUrl}" class="product-img lazy-load" referrerpolicy="no-referrer">
             </div>
             <div class="product-info">
                 <div class="product-brand">${f.Brand || ''}</div>
@@ -180,6 +174,31 @@ function renderProducts(typeName, subCategoryFilter) {
         `;
         grid.appendChild(card);
     });
+    
+    // ЗАПУСКАЕМ НАБЛЮДАТЕЛЯ
+    observeImages();
+}
+
+// --- ФУНКЦИЯ НАБЛЮДЕНИЯ ЗА СКРОЛЛОМ (ВЕРНУЛИ ЕЁ) ---
+function observeImages() {
+    const images = document.querySelectorAll('img.lazy-load');
+    
+    // Создаем наблюдателя
+    const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            // Если картинка появилась на экране
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                // Переносим ссылку из data-src в src, чтобы начать загрузку
+                img.src = img.dataset.src; 
+                img.onload = () => img.classList.add('loaded');
+                // Перестаем следить за этой картинкой (она уже грузится)
+                observer.unobserve(img);
+            }
+        });
+    }, { rootMargin: "100px" }); // Начинаем грузить за 100px до появления
+
+    images.forEach(img => observer.observe(img));
 }
 
 window.toggleCart = function(id) {
@@ -233,11 +252,9 @@ function renderCartItems(showLinks = false) {
         
         let imgUrl = 'https://via.placeholder.com/100';
         
-        // ТА ЖЕ ЛОГИКА ДЛЯ КОРЗИНЫ
+        // Только Photo_Link
         if (f.Photo_Link && typeof f.Photo_Link === 'string' && f.Photo_Link.trim() !== '') {
             imgUrl = f.Photo_Link;
-        } else if (f.Photo && Array.isArray(f.Photo) && f.Photo.length > 0) {
-            imgUrl = f.Photo[0].url;
         }
         
         const price = f.Price || 0;
