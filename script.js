@@ -1,4 +1,5 @@
-// --- НАСТРОЙКИ (Вставь ключ сюда) ---
+// --- НАСТРОЙКИ ---
+// ВСТАВЬ СЮДА СВОЙ НОВЫЙ КЛЮЧ (pat...)
 const AIRTABLE_TOKEN = 'patxpPo8CG6FqY1nk.c1a2c87e4844501709bf709b8a0db84f875e7492a8496ba3bceedc91c7ab7294'; 
 const BASE_ID = 'appxIrQj687aVwaEF';
 
@@ -13,7 +14,6 @@ let allProducts = [];
 let currentType = null;
 let currentSlide = 1;
 
-// Настройка цветов Telegram
 tg.MainButton.textColor = '#FFFFFF';
 tg.MainButton.color = '#000000';
 
@@ -27,7 +27,6 @@ tg.BackButton.onClick(() => {
 
 // --- ОНБОРДИНГ ---
 function checkOnboarding() {
-    // Показываем онбординг (можно добавить проверку localStorage, если нужно)
     document.getElementById('onboarding-overlay').style.display = 'flex';
 }
 
@@ -35,9 +34,7 @@ window.nextSlide = function() {
     if (currentSlide < 3) {
         document.getElementById(`slide-${currentSlide}`).classList.remove('active');
         document.getElementById(`dot-${currentSlide}`).classList.remove('active');
-        
         currentSlide++;
-        
         document.getElementById(`slide-${currentSlide}`).classList.add('active');
         document.getElementById(`dot-${currentSlide}`).classList.add('active');
 
@@ -83,7 +80,7 @@ window.openCategoryType = function(typeName) {
     currentType = typeName;
     const filteredProducts = allProducts.filter(p => p.fields.Type === typeName);
     if (filteredProducts.length === 0) {
-        tg.showAlert(`Раздел "${typeName}" пока пуст. Скоро здесь появится много всего хорошего!`);
+        tg.showAlert(`Раздел "${typeName}" пока пуст.`);
         return;
     }
     showCatalog(typeName);
@@ -135,14 +132,27 @@ function renderProducts(typeName, subCategoryFilter) {
     });
 
     if (productsToShow.length === 0) {
-        grid.innerHTML = '<p style="padding:40px; text-align:center; grid-column: 1/-1; color:#999;">В этой категории пока пусто</p>';
+        grid.innerHTML = '<p style="padding:40px; text-align:center; grid-column: 1/-1; color:#999;">Пусто</p>';
         return;
     }
 
     productsToShow.forEach(record => {
         const f = record.fields;
         const id = record.id;
-        let imgUrl = f.Photo_Link ? f.Photo_Link : 'https://via.placeholder.com/300x400?text=Нет+фото';
+        
+        // --- ЛОГИКА ДЛЯ ДВУХ СТОЛБЦОВ ---
+        let imgUrl = 'https://via.placeholder.com/300x400?text=Нет+фото';
+        
+        // 1. Смотрим столбец Photo_Link (это строка с ссылкой)
+        if (f.Photo_Link && typeof f.Photo_Link === 'string' && f.Photo_Link.trim() !== '') {
+            imgUrl = f.Photo_Link;
+        } 
+        // 2. Если ссылки нет, смотрим столбец Photo (это массив с файлами)
+        else if (f.Photo && Array.isArray(f.Photo) && f.Photo.length > 0) {
+            imgUrl = f.Photo[0].url;
+        }
+        // --------------------------------
+
         const oldPriceHtml = f.OldPrice ? `<span class="price-old">${f.OldPrice.toLocaleString()} ₽</span>` : '';
 
         const card = document.createElement('div');
@@ -153,7 +163,7 @@ function renderProducts(typeName, subCategoryFilter) {
 
         card.innerHTML = `
             <div class="img-container">
-                <img data-src="${imgUrl}" class="product-img lazy-load" referrerpolicy="no-referrer">
+                <img src="${imgUrl}" class="product-img" referrerpolicy="no-referrer">
             </div>
             <div class="product-info">
                 <div class="product-brand">${f.Brand || ''}</div>
@@ -170,22 +180,6 @@ function renderProducts(typeName, subCategoryFilter) {
         `;
         grid.appendChild(card);
     });
-    observeImages();
-}
-
-function observeImages() {
-    const images = document.querySelectorAll('img.lazy-load');
-    const observer = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const img = entry.target;
-                img.src = img.dataset.src; 
-                img.onload = () => img.classList.add('loaded');
-                observer.unobserve(img);
-            }
-        });
-    }, { rootMargin: "50px" });
-    images.forEach(img => observer.observe(img));
 }
 
 window.toggleCart = function(id) {
@@ -236,7 +230,16 @@ function renderCartItems(showLinks = false) {
     Object.values(cart).forEach(item => {
         const f = item.fields;
         const id = item.id;
-        let imgUrl = f.Photo_Link ? f.Photo_Link : 'https://via.placeholder.com/100';
+        
+        let imgUrl = 'https://via.placeholder.com/100';
+        
+        // ТА ЖЕ ЛОГИКА ДЛЯ КОРЗИНЫ
+        if (f.Photo_Link && typeof f.Photo_Link === 'string' && f.Photo_Link.trim() !== '') {
+            imgUrl = f.Photo_Link;
+        } else if (f.Photo && Array.isArray(f.Photo) && f.Photo.length > 0) {
+            imgUrl = f.Photo[0].url;
+        }
+        
         const price = f.Price || 0;
         totalPrice += price;
         const sellerName = f.Seller || 'магазин';
