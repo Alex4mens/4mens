@@ -1,14 +1,6 @@
-// --- ЗАГРУЗКА КОНФИГУРАЦИИ ---
-// Проверяем, загрузился ли файл config.js
-if (typeof CONFIG === 'undefined') {
-    console.error('CRITICAL: Файл config.js не найден или не загружен!');
-    // Создаем пустой объект, чтобы не было ошибок в консоли, но загрузка не пойдет
-    var CONFIG = { AIRTABLE_TOKEN: '', BASE_ID: '' };
-}
-
-// Берем ключи из конфига
-const AIRTABLE_TOKEN = CONFIG.AIRTABLE_TOKEN;
-const BASE_ID = CONFIG.BASE_ID;
+// --- НАСТРОЙКИ (Вставь ключ сюда) ---
+const AIRTABLE_TOKEN = 'patxpPo8CG6FqY1nk.c1a2c87e4844501709bf709b8a0db84f875e7492a8496ba3bceedc91c7ab7294'; 
+const BASE_ID = 'appxIrQj687aVwaEF';
 
 const CATALOG_TABLE = 'Sheet1';
 const ORDERS_TABLE = 'Orders';
@@ -25,7 +17,6 @@ let currentSlide = 1;
 tg.MainButton.textColor = '#FFFFFF';
 tg.MainButton.color = '#000000';
 
-// Обработка кнопки "Назад" в Telegram
 tg.BackButton.onClick(() => { 
     if (document.getElementById('cart-view').style.display !== 'none') {
         showCatalog(currentType);
@@ -36,11 +27,8 @@ tg.BackButton.onClick(() => {
 
 // --- ОНБОРДИНГ ---
 function checkOnboarding() {
-    // Если нужно показывать 1 раз, раскомментируй строки ниже:
-    // const seen = localStorage.getItem('onboarding_seen_v1');
-    // if (!seen) {
-        document.getElementById('onboarding-overlay').style.display = 'flex';
-    // }
+    // Показываем онбординг (можно добавить проверку localStorage, если нужно)
+    document.getElementById('onboarding-overlay').style.display = 'flex';
 }
 
 window.nextSlide = function() {
@@ -68,11 +56,6 @@ function finishOnboarding() {
 
 // --- ЗАГРУЗКА ТОВАРОВ ---
 async function loadProducts() {
-    if (!AIRTABLE_TOKEN) {
-        tg.showAlert('Ошибка: Ключ API не найден. Проверьте config.js');
-        return;
-    }
-
     const cacheBuster = Date.now();
     const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(CATALOG_TABLE)}?cacheBust=${cacheBuster}`;
     try {
@@ -80,17 +63,16 @@ async function loadProducts() {
         const data = await response.json();
         if (data.records) {
             allProducts = data.records;
-        } else {
-            console.error('Ошибка загрузки данных:', data);
+            console.log('Товары загружены:', allProducts.length);
         }
     } catch (e) {
-        console.error('Ошибка сети:', e);
+        console.error('Ошибка:', e);
         tg.showAlert('Не удалось загрузить товары.');
     }
 }
 
 function showHome() {
-    document.getElementById('home-view').style.display = 'block'; // block для div
+    document.getElementById('home-view').style.display = 'block';
     document.getElementById('catalog-view').style.display = 'none';
     document.getElementById('cart-view').style.display = 'none';
     tg.BackButton.hide();
