@@ -1,5 +1,15 @@
-const AIRTABLE_TOKEN = 'pat5N4CqgXAwZElAT.b8463357d882ad2069a5f2856a0473a8ce14fe405da14e4497be9e26daa85ee0';
-const BASE_ID = 'appxIrQj687aVwaEF';
+// --- ЗАГРУЗКА КОНФИГУРАЦИИ ---
+// Проверяем, загрузился ли файл config.js
+if (typeof CONFIG === 'undefined') {
+    console.error('CRITICAL: Файл config.js не найден или не загружен!');
+    // Создаем пустой объект, чтобы не было ошибок в консоли, но загрузка не пойдет
+    var CONFIG = { AIRTABLE_TOKEN: '', BASE_ID: '' };
+}
+
+// Берем ключи из конфига
+const AIRTABLE_TOKEN = CONFIG.AIRTABLE_TOKEN;
+const BASE_ID = CONFIG.BASE_ID;
+
 const CATALOG_TABLE = 'Sheet1';
 const ORDERS_TABLE = 'Orders';
 
@@ -11,9 +21,11 @@ let allProducts = [];
 let currentType = null;
 let currentSlide = 1;
 
+// Настройка цветов Telegram
 tg.MainButton.textColor = '#FFFFFF';
 tg.MainButton.color = '#000000';
 
+// Обработка кнопки "Назад" в Telegram
 tg.BackButton.onClick(() => { 
     if (document.getElementById('cart-view').style.display !== 'none') {
         showCatalog(currentType);
@@ -24,9 +36,7 @@ tg.BackButton.onClick(() => {
 
 // --- ОНБОРДИНГ ---
 function checkOnboarding() {
-    // ДЛЯ ТЕСТА: Показываем всегда.
-    // Перед релизом раскомментируй строки с localStorage!
-    
+    // Если нужно показывать 1 раз, раскомментируй строки ниже:
     // const seen = localStorage.getItem('onboarding_seen_v1');
     // if (!seen) {
         document.getElementById('onboarding-overlay').style.display = 'flex';
@@ -43,10 +53,8 @@ window.nextSlide = function() {
         document.getElementById(`slide-${currentSlide}`).classList.add('active');
         document.getElementById(`dot-${currentSlide}`).classList.add('active');
 
-        // Если последний слайд
         if (currentSlide === 3) {
             document.getElementById('next-btn').innerText = 'Смотреть каталог';
-            // Цвет оставляем черным (убрали строку с зеленым background), так стильнее и спокойнее
         }
     } else {
         finishOnboarding();
@@ -58,20 +66,31 @@ function finishOnboarding() {
     localStorage.setItem('onboarding_seen_v1', 'true');
 }
 
+// --- ЗАГРУЗКА ТОВАРОВ ---
 async function loadProducts() {
+    if (!AIRTABLE_TOKEN) {
+        tg.showAlert('Ошибка: Ключ API не найден. Проверьте config.js');
+        return;
+    }
+
     const cacheBuster = Date.now();
     const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(CATALOG_TABLE)}?cacheBust=${cacheBuster}`;
     try {
         const response = await fetch(url, { headers: { 'Authorization': `Bearer ${AIRTABLE_TOKEN}` } });
         const data = await response.json();
-        if (data.records) allProducts = data.records;
+        if (data.records) {
+            allProducts = data.records;
+        } else {
+            console.error('Ошибка загрузки данных:', data);
+        }
     } catch (e) {
-        console.error(e);
+        console.error('Ошибка сети:', e);
+        tg.showAlert('Не удалось загрузить товары.');
     }
 }
 
 function showHome() {
-    document.getElementById('home-view').style.display = 'flex';
+    document.getElementById('home-view').style.display = 'block'; // block для div
     document.getElementById('catalog-view').style.display = 'none';
     document.getElementById('cart-view').style.display = 'none';
     tg.BackButton.hide();
