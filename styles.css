@@ -100,7 +100,8 @@ h1 { font-size: 20px; font-weight: 900; letter-spacing: 1px; }
 .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
 .product-card { background: #fff; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
 .img-container { aspect-ratio: 3 / 4; background: #eeeeee; position: relative; overflow: hidden; }
-.product-img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity 0.3s ease-in; }
+/* ИЗМЕНЕНИЕ: Ставим opacity: 1, чтобы картинки были видны сразу */
+.product-img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 1; /* Было 0, стало 1 */transition: opacity 0.3s ease-in; }
 .product-img.loaded { opacity: 1; } 
 .product-info { padding: 10px; display: flex; flex-direction: column; flex-grow: 1; }
 .product-brand { font-weight: 800; font-size: 11px; text-transform: uppercase; color: #000; margin-bottom: 4px; }
