@@ -1,0 +1,4 @@
+const CONFIG = {
+    AIRTABLE_TOKEN: 'patxpPo8CG6FqY1nk.c1a2c87e4844501709bf709b8a0db84f875e7492a8496ba3bceedc91c7ab7294',
+    BASE_ID: 'appxIrQj687aVwaEF'
+};
