@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>4MENS</title>
+    <link rel="stylesheet" href="styles.css?v=5">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    
+    <!-- ОНБОРДИНГ -->
+    <div id="onboarding-overlay">
+        <div class="onboarding-card">
+            <div class="slide active" id="slide-1">
+                <div class="slide-number">01</div>
+                <h2>Привет!</h2>
+                <p>4MENS — витрина мужской одежды, обуви и аксессуаров. Собрали лучшее от известных брендов в одном месте.</p>
+            </div>
+            <div class="slide" id="slide-2">
+                <div class="slide-number">02</div>
+                <h2>Только лучшее</h2>
+                <p>Качественный масс-маркет без переплат. Отбираем вручную — только то, что носили бы сами.</p>
+            </div>
+            <div class="slide" id="slide-3">
+                <div class="slide-number">03</div>
+                <h2>Безопасно</h2>
+                <p>Мы — витрина. Выбираете здесь, покупаете напрямую в магазинах-партнёрах. Никаких данных карт.</p>
+            </div>
+
+            <div class="dots-container">
+                <span class="dot active" id="dot-1"></span>
+                <span class="dot" id="dot-2"></span>
+                <span class="dot" id="dot-3"></span>
+            </div>
+            
+            <button class="onboarding-btn" id="next-btn">Далее</button>
+        </div>
+    </div>
+
+    <!-- ГЛАВНАЯ СТРАНИЦА -->
+    <div id="home-view">
+        <div class="hero-section">
+            <div class="hero-content">
+                <h1>4MENS</h1>
+                <div class="hero-line"></div>
+                <p>Мужская одежда, обувь и аксессуары<br>Известные бренды • Доступные цены</p>
+            </div>
+        </div>
+
+        <div class="main-menu">
+            <div class="menu-card" data-type="Одежда">
+                <div class="card-content">
+                    <h2>Одежда</h2>
+                    <span class="card-arrow">→</span>
+                </div>
+                <div class="card-loader"></div>
+            </div>
+            <div class="menu-card" data-type="Обувь">
+                <div class="card-content">
+                    <h2>Обувь</h2>
+                    <span class="card-arrow">→</span>
+                </div>
+                <div class="card-loader"></div>
+            </div>
+            <div class="menu-card" data-type="Аксессуары">
+                <div class="card-content">
+                    <h2>Аксессуары</h2>
+                    <span class="card-arrow">→</span>
+                </div>
+                <div class="card-loader"></div>
+            </div>
+        </div>
+        
+        <div id="home-loading" class="home-loading-text">Загрузка каталога...</div>
+
+        <div class="home-footer">
+            <button class="footer-btn" id="favorites-btn">
+                <span class="footer-icon">♡</span>
+                <span>Избранное</span>
+                <span class="badge" id="favorites-badge" style="display: none;">0</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- КАТАЛОГ -->
+    <div id="catalog-view" style="display: none;">
+        <header class="catalog-header">
+            <button class="back-btn" id="catalog-back-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h1 id="catalog-title">Каталог</h1>
+            <button class="header-action-btn" id="header-favorites-btn">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+                <span class="badge" id="header-favorites-badge" style="display: none;">0</span>
+            </button>
+        </header>
+
+        <div id="categories-nav">
+            <div id="categories"></div>
+        </div>
+
+        <!-- Фильтры -->
+        <div id="filters-section">
+            <button class="filters-toggle" id="filters-toggle-btn">
+                <span>Фильтры</span>
+                <span class="filters-icon">▼</span>
+            </button>
+            <div class="filters-panel" id="filters-panel" style="display: none;">
+                <div class="filter-group">
+                    <label>Категория</label>
+                    <div id="category-filters" class="filter-chips"></div>
+                </div>
+                <div class="filter-group">
+                    <label>Цена</label>
+                    <div class="price-inputs">
+                        <input type="number" id="price-min" placeholder="От">
+                        <span>—</span>
+                        <input type="number" id="price-max" placeholder="До">
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>Бренд</label>
+                    <div id="brand-filters" class="filter-chips"></div>
+                </div>
+                <div class="filter-group">
+                    <label>Магазин</label>
+                    <div id="seller-filters" class="filter-chips"></div>
+                </div>
+                <div class="filter-actions">
+                    <button class="filter-reset-btn" id="filter-reset-btn">Сбросить</button>
+                    <button class="filter-apply-btn" id="filter-apply-btn">Применить</button>
+                </div>
+            </div>
+        </div>
+
+        <main>
+            <div id="product-grid" class="product-grid">
+                <div class="loading-spinner">Загрузка...</div>
+            </div>
+        </main>
+    </div>
+
+    <!-- КАРТОЧКА ТОВАРА -->
+    <div id="product-view" style="display: none;">
+        <header class="product-header">
+            <button class="back-btn" id="product-back-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h1 id="product-header-title">Товар</h1>
+            <button class="header-action-btn" id="product-favorite-btn">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+            </button>
+        </header>
+
+        <div class="product-gallery">
+            <div class="gallery-slider" id="gallery-slider">
+                <div class="gallery-slides" id="gallery-slides"></div>
+                <div class="gallery-dots" id="gallery-dots"></div>
+            </div>
+        </div>
+
+        <div class="product-details">
+            <div class="product-brand-title" id="product-brand"></div>
+            <h2 id="product-title"></h2>
+            <div class="product-seller-info" id="product-seller"></div>
+            
+            <div class="product-price-block">
+                <span class="product-price" id="product-price"></span>
+                <span class="product-old-price" id="product-old-price"></span>
+            </div>
+
+            <div class="product-description-block" id="product-description-block">
+                <h3>Описание</h3>
+                <p id="product-description"></p>
+            </div>
+
+            <div class="product-composition-block" id="product-composition-block">
+                <h3>Состав</h3>
+                <p id="product-composition"></p>
+            </div>
+        </div>
+
+        <div class="product-actions">
+            <button class="action-btn secondary" id="add-to-favorites-btn">
+                <span class="btn-icon">♡</span> В избранное
+            </button>
+            <button class="action-btn primary" id="add-to-cart-btn">
+                <span class="btn-icon">🛒</span> В корзину
+            </button>
+        </div>
+    </div>
+
+    <!-- ИЗБРАННОЕ -->
+    <div id="favorites-view" style="display: none;">
+        <header class="catalog-header">
+            <button class="back-btn" id="favorites-back-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h1>Избранное</h1>
+            <div style="width: 36px;"></div>
+        </header>
+
+        <div id="favorites-empty" class="empty-state">
+            <div class="empty-icon">♡</div>
+            <p>Здесь пока пусто</p>
+            <span>Добавляй товары в избранное, чтобы не потерять</span>
+        </div>
+
+        <div id="favorites-grid" class="product-grid"></div>
+    </div>
+
+    <!-- КОРЗИНА -->
+    <div id="cart-view" style="display: none;">
+        <header class="catalog-header">
+            <button class="back-btn" id="cart-back-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h1>Корзина</h1>
+            <div style="width: 36px;"></div>
+        </header>
+
+        <div id="cart-empty" class="empty-state">
+            <div class="empty-icon">🛒</div>
+            <p>Корзина пуста</p>
+            <span>Добавь товары, чтобы оформить заказ</span>
+        </div>
+
+        <div id="cart-items" class="cart-items"></div>
+
+        <div id="cart-footer" class="cart-footer" style="display: none;">
+            <div class="cart-total">
+                <span>Итого:</span>
+                <span id="total-price">0 ₽</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ЗАКАЗ ОФОРМЛЕН -->
+    <div id="order-confirmed-view" style="display: none;">
+        <header class="catalog-header">
+            <button class="back-btn" id="order-back-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h1>Заказ</h1>
+            <div style="width: 36px;"></div>
+        </header>
+
+        <div class="order-confirmed-content">
+            <div class="order-success-icon">✓</div>
+            <h2>Отлично!</h2>
+            <p>Теперь перейдите в магазины по кнопкам ниже, чтобы завершить покупку.</p>
+            <div id="order-links"></div>
+        </div>
+    </div>
+
+    <script src="script.js?v=5"></script>
+</body>
+</html>
